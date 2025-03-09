@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Modal,
   ScrollView,
   Pressable,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapPin, Search, X } from 'lucide-react-native';
@@ -36,6 +37,7 @@ export default function StopsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const { language, timeFormat, darkMode } = useSettings();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const { filterSuggestions, checkIfTPG, getFullStopName, findNearestStop } = useArretsCsv();
 
@@ -154,6 +156,23 @@ export default function StopsScreen() {
   const handleVehiclePress = (vehicle) => {
     setSelectedVehicle(vehicle);
     setModalVisible(true);
+    // Start the fade-in animation when modal opens
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeModal = () => {
+    // Fade out animation before closing the modal
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setModalVisible(false);
+    });
   };
 
   return (
@@ -237,45 +256,71 @@ export default function StopsScreen() {
       )}
 
       <Modal
-        animationType="slide"
+        animationType="none"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: darkMode ? '#1C1C1E' : '#FFFFFF' }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {selectedVehicle?.vehicleType} {selectedVehicle?.number}
-              </Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisible(false)}>
-                <X size={24} color="#FF6600" />
-              </TouchableOpacity>
-            </View>
-            
-            <ScrollView style={styles.modalScroll}>
-              {selectedVehicle && Object.entries(selectedVehicle.destinations).map(([destination, times]) => (
-                <View key={destination} style={styles.destinationSection}>
-                  <Text style={[styles.destinationTitle, { color: darkMode ? '#FFFFFF' : '#333' }]}>
-                    {language === 'en' ? 'To: ' : 'Vers: '}{destination}
-                  </Text>
-                  <View style={styles.timesGrid}>
-                    {times.slice(0, 4).map((time, index) => (
-                      <View
-                        key={index}
-                        style={[styles.timeBox, { backgroundColor: selectedVehicle.color }]}>
-                        <Text style={styles.timeText}>
-                          {renderDepartureTime(time)}
-                        </Text>
-                      </View>
-                    ))}
+        onRequestClose={() => {
+          closeModal();
+        }}>
+        <Animated.View 
+          style={[styles.modalOverlay, {
+            opacity: fadeAnim,
+          }]}
+        >
+          <Pressable 
+            style={styles.modalBackdrop}
+            onPress={closeModal}
+          >
+            <Animated.View 
+              style={[styles.modalContent, 
+                { backgroundColor: darkMode ? '#1C1C1E' : '#FFFFFF' },
+                {
+                  transform: [{
+                    translateY: fadeAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [300, 0],
+                    })
+                  }]
+                }
+              ]}
+              // This prevents taps on the content from closing the modal
+              onStartShouldSetResponder={() => true}
+              onTouchEnd={(e) => e.stopPropagation()}
+            >
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {selectedVehicle?.vehicleType} {selectedVehicle?.number}
+                </Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={closeModal}>
+                  <X size={24} color="#FF6600" />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView style={styles.modalScroll}>
+                {selectedVehicle && Object.entries(selectedVehicle.destinations).map(([destination, times]) => (
+                  <View key={destination} style={styles.destinationSection}>
+                    <Text style={[styles.destinationTitle, { color: darkMode ? '#FFFFFF' : '#333' }]}>
+                      {language === 'en' ? 'To: ' : 'Vers: '}{destination}
+                    </Text>
+                    <View style={styles.timesGrid}>
+                      {times.slice(0, 4).map((time, index) => (
+                        <View
+                          key={index}
+                          style={[styles.timeBox, { backgroundColor: selectedVehicle.color }]}>
+                          <Text style={styles.timeText}>
+                            {renderDepartureTime(time)}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
+                ))}
+              </ScrollView>
+            </Animated.View>
+          </Pressable>
+        </Animated.View>
       </Modal>
     </SafeAreaView>
   );
@@ -391,6 +436,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
   modalContent: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
@@ -428,13 +477,16 @@ const styles = StyleSheet.create({
   timesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    justifyContent: 'space-between',
+    width: '100%',
   },
   timeBox: {
     padding: 15,
     borderRadius: 10,
-    minWidth: 80,
+    width: '48%',  // Make them slightly wider but keep two per row
+    marginBottom: 10,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   timeText: {
     color: '#FFFFFF',

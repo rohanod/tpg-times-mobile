@@ -34,7 +34,7 @@ export default function SettingsScreen() {
 
         <View style={styles.setting}>
           <Text style={[styles.settingText, { color: darkMode ? '#FFFFFF' : '#333333' }]}>
-            {language === 'en' ? 'Dark Mode' : 'Mode Sombre'}
+            {language === 'en' ? 'Dark Mode' : 'Mode Sombre'}: {darkMode ? (language === 'en' ? 'On' : 'Activé') : (language === 'en' ? 'Off' : 'Désactivé')}
           </Text>
           <Switch
             value={darkMode}
@@ -46,7 +46,9 @@ export default function SettingsScreen() {
 
         <View style={styles.setting}>
           <Text style={[styles.settingText, { color: darkMode ? '#FFFFFF' : '#333333' }]}>
-            {language === 'en' ? 'Show Minutes' : 'Afficher Minutes'}
+            {timeFormat === 'minutes' ? 
+              (language === 'en' ? 'Show Minutes' : 'Afficher Minutes') : 
+              (language === 'en' ? 'Show Time' : 'Afficher Heure')}
           </Text>
           <Switch
             value={timeFormat === 'minutes'}
