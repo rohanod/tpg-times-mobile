@@ -104,7 +104,26 @@ export const useArretsCsv = () => {
       return arret.active && (lowerStopName.includes(arretName) || arretName.includes(lowerStopName));
     });
     
-    return match ? match.fullName : stopName;
+    const initialName = match ? match.fullName : stopName;
+    
+    // Use transport.opendata.ch API to get nicely formatted name
+    try {
+      const locationsResponse = await fetch(`${API_ENDPOINTS.LOCATIONS}?query=${encodeURIComponent(initialName)}&type=station`);
+      const locationsData = await locationsResponse.json();
+      
+      // Log the response for debugging
+      console.log('Locations API response:', JSON.stringify(locationsData).substring(0, 200));
+      
+      if (locationsData && locationsData.stations && locationsData.stations.length > 0) {
+        // Return the nicely formatted name from locations API
+        return locationsData.stations[0].name || initialName;
+      }
+    } catch (err) {
+      console.error('Error getting formatted stop name:', err);
+    }
+    
+    // Fallback to the initial name if API call fails
+    return initialName;
   };
 
   // Calculate distance between two coordinates using Haversine formula
@@ -151,12 +170,19 @@ export const useArretsCsv = () => {
       const nearestStop = stopsWithDistances[0];
       if (!nearestStop) return null;
       
-      // Verify with the API to get the proper ID
+      // First format as {Municipality}, {stop}
+      const formattedName = nearestStop.fullName;
+      
+      // Use transport.opendata.ch API to get nicely formatted name and ID
       try {
+        // Use the locations API directly to get the proper formatted name and ID
         const response = await fetch(
-          `${API_ENDPOINTS.LOCATIONS}?query=${encodeURIComponent(nearestStop.fullName)}&type=station`
+          `${API_ENDPOINTS.LOCATIONS}?query=${encodeURIComponent(formattedName)}&type=station`
         );
         const data = await response.json();
+        
+        // Log the response for debugging
+        console.log('Locations API response in findNearestStop:', JSON.stringify(data).substring(0, 200));
         
         if (data.stations && data.stations.length > 0) {
           return {
@@ -165,13 +191,13 @@ export const useArretsCsv = () => {
           };
         }
       } catch (err) {
-        console.error('Error verifying stop with API:', err);
+        console.error('Error with locations API:', err);
       }
       
       // Fallback to just returning the nearest stop without an ID
       return {
         id: `local-${Date.now()}`,
-        name: nearestStop.fullName
+        name: formattedName
       };
     } catch (err) {
       console.error('Error finding nearest stop:', err);

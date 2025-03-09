@@ -146,7 +146,7 @@ export default function StopsScreen() {
   const renderDepartureTime = (departure) => {
     return (
       <Text style={styles.departureTime}>
-        {formatTime(departure.stop.departure)}
+        {formatTime(departure.departure.format(), timeFormat)}
       </Text>
     );
   };

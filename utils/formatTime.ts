@@ -1,8 +1,6 @@
-import { useSettings } from '../hooks/useSettings';
+// Removed the useSettings hook import as it shouldn't be used in a utility function
 
-export const formatTime = (timestamp: string) => {
-  const { timeFormat } = useSettings();
-  
+export const formatTime = (timestamp: string, timeFormat: 'minutes' | 'time') => {
   if (timeFormat === 'minutes') {
     const departureTime = new Date(timestamp).getTime();
     const now = Date.now();
