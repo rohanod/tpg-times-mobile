@@ -5,8 +5,11 @@
 <!-- 4. Allow tapping outside the timings popup to exit it -->
 <!-- 5. Make the 4 timings in a grid and make them a tiny bit wider to look better -->
 <!-- 6. Make the shadow not go up with the popup, make it fade in so it looks nicer -->
-7. Keep when you show the number filters consistent so have it always show stop name text box and always show bus/tram number textbox
-8. Properly implement favourite stops properly so in the favourites page, it has a button that says "Add current stop to favourites"
+<!-- 7. Keep when you show the number filters consistent so have it always show stop name text box and always show bus/tram number textbox -->
+<!-- 7.5. Make the number filters actually work and make it a number input so no letters allowed and have the number keypad -->
+<!-- 7.6. Remove the number filters. -->
+<!-- 7.7. Implement a bus/tram number filter text box that will go right under the stop name and it will always be available and the purpose is to make sure it only shows the buses/trams in that box. It will work the same way it's done in the javascript. #File:website.js -->
+8. Properly implement favourite stops properly so in the favourites page, it has a button that says "Add current stop to favourites" and make sure it keeps all the bus/tram number filters from the text box so it autofills the stop name text box and the bus/tram number text box
 9. Make the circle buttons a tiny bit smaller
 10. Make the circles centred
 11. It's not properly using the search.ch API to get the nicely formatted stop names when doing location detection
@@ -61,3 +64,6 @@ const defaultSettings = {
 14. Make the search autocompletions hover above the bus/tram numbers text box and have a done button on the keyboard to close the keyboard and suggestions
 15. Make all the icons for the bus/tram numbers always be in the same place for each "stop session"(Each time viewing timings for one stop but if you go to a different stop, it's a different session and even if you go back to the same stop, it's a different session)
 16. Allow scrolling up a bit in the popup so the user can see more times(If there are more times than the popup can fit)
+17. Make the cells have a yellow background colour when there is a delay of any time
+18. Right now, I think when the time format is minutes, it calculates the delays but doesn't show a warning but if the time format is 24 hour time, it doesn't calculate the delays and doesn't show the warnings
+19. When exiting the text box, it should clear the autocompletions

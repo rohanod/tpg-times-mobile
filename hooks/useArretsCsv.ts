@@ -85,6 +85,9 @@ export const useArretsCsv = () => {
       await fetchArretsCsv();
     }
     
+    // Add null check before using toLowerCase
+    if (!stopName) return false;
+    
     const lowerStopName = stopName.toLowerCase();
     return arretsList.some(arret => {
       const arretName = arret.name.toLowerCase();
@@ -98,6 +101,9 @@ export const useArretsCsv = () => {
       await fetchArretsCsv();
     }
     
+    // Add null check before using toLowerCase
+    if (!stopName) return '';
+    
     const lowerStopName = stopName.toLowerCase();
     const match = arretsList.find(arret => {
       const arretName = arret.name.toLowerCase();
@@ -110,9 +116,6 @@ export const useArretsCsv = () => {
     try {
       const locationsResponse = await fetch(`${API_ENDPOINTS.LOCATIONS}?query=${encodeURIComponent(initialName)}&type=station`);
       const locationsData = await locationsResponse.json();
-      
-      // Log the response for debugging
-      console.log('Locations API response:', JSON.stringify(locationsData).substring(0, 200));
       
       if (locationsData && locationsData.stations && locationsData.stations.length > 0) {
         // Return the nicely formatted name from locations API
@@ -181,9 +184,6 @@ export const useArretsCsv = () => {
         );
         const data = await response.json();
         
-        // Log the response for debugging
-        console.log('Locations API response in findNearestStop:', JSON.stringify(data).substring(0, 200));
-        
         if (data.stations && data.stations.length > 0) {
           return {
             id: data.stations[0].id,
@@ -214,7 +214,8 @@ export const useArretsCsv = () => {
     const validSuggestions = [];
     
     for (const suggestion of suggestions) {
-      if (await checkIfTPG(suggestion.name)) {
+      // Add null check for suggestion and suggestion.name
+      if (suggestion && suggestion.name && await checkIfTPG(suggestion.name)) {
         const fullName = await getFullStopName(suggestion.name);
         validSuggestions.push({
           id: suggestion.id || `suggestion-${Date.now()}-${Math.random()}`,

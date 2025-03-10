@@ -12,9 +12,10 @@ import {
   ScrollView,
   Pressable,
   Animated,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, Search, X } from 'lucide-react-native';
+import { MapPin, Search, X, Plus } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { useSettings } from '../../hooks/useSettings';
 import { useArretsCsv } from '../../hooks/useArretsCsv';
@@ -33,7 +34,8 @@ export default function StopsScreen() {
   const [loading, setLoading] = useState(false);
   const [selectedStop, setSelectedStop] = useState(null);
   const [departures, setDepartures] = useState([]);
-  const [vehicleNumbers, setVehicleNumbers] = useState('');
+  const [vehicleNumberInput, setVehicleNumberInput] = useState('');
+  const [vehicleNumberFilters, setVehicleNumberFilters] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const { language, timeFormat, darkMode } = useSettings();
@@ -41,8 +43,22 @@ export default function StopsScreen() {
 
   const { filterSuggestions, checkIfTPG, getFullStopName, findNearestStop } = useArretsCsv();
 
+  // Effect to fetch departures when filters change
+  useEffect(() => {
+    if (selectedStop) {
+      fetchDepartures(selectedStop.name);
+    }
+  }, [vehicleNumberFilters, selectedStop]);
+
   const handleSearch = async (text: string) => {
     setSearchQuery(text);
+    
+    // If we have a selected stop and the user starts typing again,
+    // clear the selected stop to prevent state inconsistency
+    if (selectedStop && text !== searchQuery) {
+      setSelectedStop(null);
+    }
+    
     if (!text.trim()) {
       setSuggestions([]);
       return;
@@ -94,11 +110,25 @@ export default function StopsScreen() {
     await fetchDepartures(stop.name);
   };
 
+  // Add a vehicle number to the filters
+  const addVehicleNumberFilter = () => {
+    const number = vehicleNumberInput.trim();
+    if (number && !vehicleNumberFilters.includes(number)) {
+      setVehicleNumberFilters([...vehicleNumberFilters, number]);
+      setVehicleNumberInput(''); // Clear the input after adding
+    }
+  };
+
+  // Remove a vehicle number from the filters
+  const removeVehicleNumberFilter = (numberToRemove) => {
+    setVehicleNumberFilters(vehicleNumberFilters.filter(num => num !== numberToRemove));
+  };
+
   const fetchDepartures = async (stopName) => {
     setLoading(true);
     try {
       const response = await fetch(
-        `${API_ENDPOINTS.STATIONBOARD}?stop=${encodeURIComponent(stopName)}&limit=300&show_delays=1&transportation_types=tram,bus&mode=depart`
+        `${API_ENDPOINTS.STATIONBOARD}?stop=${encodeURIComponent(stopName)}&limit=300&show_delays=1&transportation_types=tram,bus&mode=arrival`
       );
       const data = await response.json();
 
@@ -136,7 +166,22 @@ export default function StopsScreen() {
           return acc;
         }, {});
 
-        setDepartures(Object.values(groupedDepartures));
+        // Filter by vehicle numbers if specified - optimized filtering logic
+        let filteredGroupedDepartures = Object.values(groupedDepartures);
+        
+        if (vehicleNumberFilters.length > 0) {
+          // Create a Set for faster lookups
+          const filterSet = new Set(vehicleNumberFilters);
+          
+          filteredGroupedDepartures = filteredGroupedDepartures.filter(vehicle => {
+            // Convert to string for comparison
+            const vehicleNum = String(vehicle.number).trim();
+            // Use Set.has() for faster lookups
+            return filterSet.has(vehicleNum);
+          });
+        }
+
+        setDepartures(filteredGroupedDepartures);
       }
     } catch (error) {
       console.error('Error fetching departures:', error);
@@ -201,6 +246,49 @@ export default function StopsScreen() {
           <MapPin size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
+      
+      {/* Bus/Tram number filter with chips */}
+      <View style={[styles.filterContainer, { backgroundColor: darkMode ? '#1C1C1E' : '#F5F5F5' }]}>
+        <View style={styles.filterInputContainer}>
+          <TextInput
+            style={[styles.filterInput, { color: darkMode ? '#FFFFFF' : '#333' }]}
+            placeholder={language === 'en' ? 'Enter bus/tram number' : 'Numéro de bus/tram'}
+            value={vehicleNumberInput}
+            onChangeText={setVehicleNumberInput}
+            placeholderTextColor={darkMode ? '#666666' : '#999'}
+            keyboardType="numeric"
+            returnKeyType="done"
+            onSubmitEditing={addVehicleNumberFilter}
+          />
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={addVehicleNumberFilter}
+            disabled={!vehicleNumberInput.trim()}
+          >
+            <Plus size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+        
+        {vehicleNumberFilters.length > 0 && (
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.chipsContainer}
+            contentContainerStyle={styles.chipsContent}
+          >
+            {vehicleNumberFilters.map((number) => (
+              <TouchableOpacity 
+                key={number} 
+                style={[styles.chip, { backgroundColor: darkMode ? '#333333' : '#DDDDDD' }]}
+                onPress={() => removeVehicleNumberFilter(number)}
+              >
+                <Text style={[styles.chipText, { color: darkMode ? '#FFFFFF' : '#333333' }]}>{number}</Text>
+                <X size={16} color={darkMode ? '#FFFFFF' : '#333333'} style={styles.chipIcon} />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+      </View>
 
       {suggestions.length > 0 && (
         <FlatList
@@ -215,23 +303,6 @@ export default function StopsScreen() {
           )}
           style={styles.suggestionsList}
         />
-      )}
-
-      {selectedStop && (
-        <View style={styles.filterContainer}>
-          <TextInput
-            style={[styles.filterInput, { backgroundColor: darkMode ? '#1C1C1E' : '#F5F5F5', color: darkMode ? '#FFFFFF' : '#333' }]}
-            placeholder={language === 'en' ? 'Filter by line number (e.g., 12,18)' : 'Filtrer par numéro de ligne (ex: 12,18)'}
-            value={vehicleNumbers}
-            onChangeText={(text) => {
-              setVehicleNumbers(text);
-              if (selectedStop) {
-                fetchDepartures(selectedStop.name);
-              }
-            }}
-            placeholderTextColor="#999"
-          />
-        </View>
       )}
 
       {loading ? (
@@ -363,6 +434,59 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
+  // Filter styles
+  filterContainer: {
+    marginTop: 10,
+    marginHorizontal: 20,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+  },
+  filterInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  filterInput: {
+    flex: 1,
+    height: 40,
+    fontSize: 16,
+    color: '#333',
+  },
+  addButton: {
+    backgroundColor: '#FF6600',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  chipsContainer: {
+    marginTop: 10,
+    maxHeight: 40,
+  },
+  chipsContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 10,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DDDDDD',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+  },
+  chipText: {
+    fontSize: 14,
+    marginRight: 4,
+  },
+  chipIcon: {
+    marginLeft: 2,
+  },
   locationButton: {
     width: 50,
     height: 50,
@@ -386,18 +510,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   suggestionText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  filterContainer: {
-    paddingHorizontal: 20,
-    marginTop: 10,
-  },
-  filterInput: {
-    height: 50,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 10,
-    paddingHorizontal: 15,
     fontSize: 16,
     color: '#333',
   },

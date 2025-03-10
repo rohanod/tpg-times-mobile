@@ -5,7 +5,7 @@ export const formatTime = (timestamp: string, timeFormat: 'minutes' | 'time') =>
     const departureTime = new Date(timestamp).getTime();
     const now = Date.now();
     const diffMinutes = Math.floor((departureTime - now) / 60000);
-    return diffMinutes > 0 ? `${diffMinutes} min` : 'Departing';
+    return diffMinutes > 0 ? `${diffMinutes} min` : 'At the stop';
   }
 
   // 24-hour time format
