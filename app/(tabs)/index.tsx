@@ -596,10 +596,10 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   vehicleButton: {
-    width: 100,
-    height: 100,
+    width: 90,
+    height: 90,
     margin: 8,
-    borderRadius: 50,
+    borderRadius: 45,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 3,

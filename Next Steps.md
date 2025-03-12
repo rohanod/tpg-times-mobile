@@ -11,8 +11,8 @@
 <!-- 7.3. Implement a bus/tram number filter text box that will go right under the stop name and it will always be available and the purpose is to make sure it only shows the buses/trams in that box. It will work the same way it's done in the javascript. #File:website.js -->
 <!-- 8. Properly implement favourite stops properly so in the favourites page, it has a button that says "Add current stop to favourites" and make sure it keeps all the bus/tram number filters from the text box so it autofills the stop name text box and the bus/tram number text box. By the way, the add to favourites button should be in the favourites menu not on any other page -->
 <!-- 8.1. It doesn't actually show the stop/filters in the favourites menu. It should store the stop name and bus/tram numbers filter and then show that info so the user knows which one it is and maybe call it saved stops but first fix all the other things because I can't save stops and when I press the button, it just sends me back to home page. By the way, the add to favourites button should be in the favourites menu not on any other page -->
-9. Make the circle buttons a tiny bit smaller
-10. Make the circles centred
+<!-- 9. Make the circle buttons a tiny bit smaller -->
+10. Make the circles collectively centred
 <!-- 11. It's not properly using the search.ch API to get the nicely formatted stop names when doing location detection -->
 12. When refreshing timings, make it cache the old timing then once the new timings have been fully fetched and fully recieved then replace the old timings with the new timings seamlessly so it doesn't show a loading wheel
 13. Make it easier to configure settings in a file. For example, the old javascript code had a part at the top to configure it but maybe we can have config.json:
