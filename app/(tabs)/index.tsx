@@ -392,6 +392,7 @@ export default function StopsScreen() {
               </TouchableOpacity>
             )}
             contentContainerStyle={styles.vehiclesGrid}
+            columnWrapperStyle={styles.vehiclesRow}
           />
         </View>
       )}
@@ -594,6 +595,10 @@ const styles = StyleSheet.create({
   },
   vehiclesGrid: {
     padding: 10,
+    alignItems: 'center',
+  },
+  vehiclesRow: {
+    justifyContent: 'center',
   },
   vehicleButton: {
     width: 90,
