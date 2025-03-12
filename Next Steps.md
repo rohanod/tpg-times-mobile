@@ -15,7 +15,7 @@
 <!-- 9.5. (Revert) Make the circle buttons a tiny bit bigger to maybe 110 -->
 <!-- 10. Make the circles collectively centred -->
 <!-- 11. It's not properly using the search.ch API to get the nicely formatted stop names when doing location detection -->
-12. When refreshing timings, make it cache the old timing then once the new timings have been fully fetched and fully recieved then replace the old timings with the new timings seamlessly so it doesn't show a loading wheel
+<!-- 12. When refreshing timings, make it cache the old timing then once the new timings have been fully fetched and fully recieved then replace the old timings with the new timings seamlessly so it doesn't show a loading wheel -->
 13. Make it easier to configure settings in a file. For example, the old javascript code had a part at the top to configure it but maybe we can have config.json:
 
 const API_ENDPOINTS = {

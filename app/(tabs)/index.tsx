@@ -193,7 +193,13 @@ export default function StopsScreen() {
 
   const fetchDepartures = async (stopName) => {
     console.log('Fetching departures for stop:', stopName);
-    setLoading(true);
+    
+    // Only show loading indicator for initial load, not for refreshes
+    const isInitialLoad = departures.length === 0;
+    if (isInitialLoad) {
+      setLoading(true);
+    }
+    
     try {
       const url = `${API_ENDPOINTS.STATIONBOARD}?stop=${encodeURIComponent(stopName)}&limit=300&show_delays=1&transportation_types=tram,bus&mode=arrival`;
       console.log('Fetching from URL:', url);
@@ -250,12 +256,16 @@ export default function StopsScreen() {
         }
 
         console.log('Filtered departures count:', filteredGroupedDepartures.length);
+        
+        // Only update the UI once we have the complete data
         setDepartures(filteredGroupedDepartures);
       }
     } catch (error) {
       console.error('Error fetching departures:', error);
     } finally {
-      setLoading(false);
+      if (isInitialLoad) {
+        setLoading(false);
+      }
     }
   };
 
