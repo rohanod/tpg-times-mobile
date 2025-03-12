@@ -35,3 +35,4 @@ yarn-error.*
 
 # iOS Build Folder
 ios/
+.qodo

@@ -19,8 +19,10 @@ import { MapPin, Search, X, Plus } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { useSettings } from '../../hooks/useSettings';
 import { useArretsCsv } from '../../hooks/useArretsCsv';
+import { useCurrentStop } from '../../hooks/useCurrentStop';
 import moment from 'moment-timezone';
 import { formatTime } from '../../utils/formatTime';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 const API_ENDPOINTS = {
   LOCATIONS: "https://transport.opendata.ch/v1/locations",
@@ -32,6 +34,7 @@ export default function StopsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
+  // Use local state for UI purposes
   const [selectedStop, setSelectedStop] = useState(null);
   const [departures, setDepartures] = useState([]);
   const [vehicleNumberInput, setVehicleNumberInput] = useState('');
@@ -39,10 +42,58 @@ export default function StopsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const { language, timeFormat, darkMode } = useSettings();
+  // Use the global state for sharing between tabs
+  const { currentStop, setCurrentStop, setVehicleNumberFilters: setGlobalFilters } = useCurrentStop();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const router = useRouter();
 
   const { filterSuggestions, checkIfTPG, getFullStopName, findNearestStop } = useArretsCsv();
+  
+  // Log the current state for debugging
+  useEffect(() => {
+    console.log('Current state in index.tsx:', {
+      selectedStop,
+      vehicleNumberFilters,
+      searchQuery,
+      globalCurrentStop: currentStop
+    });
+  }, [selectedStop, vehicleNumberFilters, searchQuery, currentStop]);
 
+  // Get parameters from URL when navigating from favorites
+  const params = useLocalSearchParams();
+  
+  // Handle incoming parameters from favorites page
+  useEffect(() => {
+    console.log('Index screen - Received params:', params);
+    
+    if (params && typeof params === 'object') {
+      const stopName = params.stop;
+      const numbers = params.numbers;
+      
+      console.log('Index screen - Extracted params:', { stopName, numbers });
+      
+      if (stopName && !selectedStop) {
+        console.log('Index screen - Setting stop from params:', stopName);
+        // Create a stop object with the name from params
+        const stop = { name: stopName.toString() };
+        setSearchQuery(stopName.toString());
+        setSelectedStop(stop);
+        // Also update the global state
+        setCurrentStop(stop);
+        
+        // Handle vehicle number filters if provided
+        if (numbers) {
+          const numbersStr = numbers.toString();
+          const filtersArray = numbersStr.split(',');
+          console.log('Index screen - Setting filters from params:', filtersArray);
+          setVehicleNumberFilters(filtersArray);
+          // Also update the global state
+          setGlobalFilters(filtersArray);
+        }
+      }
+    }
+  }, [params]);
+  
   // Effect to fetch departures when filters change
   useEffect(() => {
     if (selectedStop) {
@@ -50,13 +101,14 @@ export default function StopsScreen() {
     }
   }, [vehicleNumberFilters, selectedStop]);
 
+
   const handleSearch = async (text: string) => {
     setSearchQuery(text);
     
-    // If we have a selected stop and the user starts typing again,
-    // clear the selected stop to prevent state inconsistency
-    if (selectedStop && text !== searchQuery) {
+    // Clear only local state and suggestions when typing
+    if (text !== searchQuery) {
       setSelectedStop(null);
+      setSuggestions([]);
     }
     
     if (!text.trim()) {
@@ -102,9 +154,13 @@ export default function StopsScreen() {
   };
 
   const handleStopSelect = async (stop) => {
+    console.log('Selected stop:', stop);
     setSelectedStop(stop);
+    // Update the global state
+    setCurrentStop(stop);
     // Get the full stop name (municipality + stop name) for better display
     const fullStopName = await getFullStopName(stop.name);
+    console.log('Full stop name:', fullStopName);
     setSearchQuery(fullStopName);
     setSuggestions([]);
     await fetchDepartures(stop.name);
@@ -114,22 +170,34 @@ export default function StopsScreen() {
   const addVehicleNumberFilter = () => {
     const number = vehicleNumberInput.trim();
     if (number && !vehicleNumberFilters.includes(number)) {
-      setVehicleNumberFilters([...vehicleNumberFilters, number]);
+      const newFilters = [...vehicleNumberFilters, number];
+      console.log('Adding vehicle filter:', number, 'New filters:', newFilters);
+      setVehicleNumberFilters(newFilters);
+      // Update the global state
+      setGlobalFilters(newFilters);
       setVehicleNumberInput(''); // Clear the input after adding
     }
   };
+  
+  // Function removed as the favorites button has been removed from the home screen
+  // const navigateToFavorites = () => { ... };
+
 
   // Remove a vehicle number from the filters
   const removeVehicleNumberFilter = (numberToRemove) => {
-    setVehicleNumberFilters(vehicleNumberFilters.filter(num => num !== numberToRemove));
+    const newFilters = vehicleNumberFilters.filter(num => num !== numberToRemove);
+    setVehicleNumberFilters(newFilters);
+    // Update the global state
+    setGlobalFilters(newFilters);
   };
 
   const fetchDepartures = async (stopName) => {
+    console.log('Fetching departures for stop:', stopName);
     setLoading(true);
     try {
-      const response = await fetch(
-        `${API_ENDPOINTS.STATIONBOARD}?stop=${encodeURIComponent(stopName)}&limit=300&show_delays=1&transportation_types=tram,bus&mode=arrival`
-      );
+      const url = `${API_ENDPOINTS.STATIONBOARD}?stop=${encodeURIComponent(stopName)}&limit=300&show_delays=1&transportation_types=tram,bus&mode=arrival`;
+      console.log('Fetching from URL:', url);
+      const response = await fetch(url);
       const data = await response.json();
 
       if (data.connections) {
@@ -181,6 +249,7 @@ export default function StopsScreen() {
           });
         }
 
+        console.log('Filtered departures count:', filteredGroupedDepartures.length);
         setDepartures(filteredGroupedDepartures);
       }
     } catch (error) {
@@ -226,6 +295,7 @@ export default function StopsScreen() {
         <Text style={[styles.title, { color: '#FF6600' }]}>
           {language === 'en' ? 'TPG Bus and Tram' : 'Bus et Tram TPG'}
         </Text>
+        {/* Removed the Save to Favorites button from the main page as requested */}
       </View>
 
       <View style={styles.searchContainer}>
@@ -405,13 +475,18 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     paddingTop: Platform.OS === 'ios' ? 0 : 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#FF6600',
+    flex: 1,
     textAlign: 'center',
   },
+  // Removed favoritesButton styles as the button has been removed
   searchContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,

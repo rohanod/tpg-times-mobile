@@ -6,13 +6,14 @@
 <!-- 5. Make the 4 timings in a grid and make them a tiny bit wider to look better -->
 <!-- 6. Make the shadow not go up with the popup, make it fade in so it looks nicer -->
 <!-- 7. Keep when you show the number filters consistent so have it always show stop name text box and always show bus/tram number textbox -->
-<!-- 7.5. Make the number filters actually work and make it a number input so no letters allowed and have the number keypad -->
-<!-- 7.6. Remove the number filters. -->
-<!-- 7.7. Implement a bus/tram number filter text box that will go right under the stop name and it will always be available and the purpose is to make sure it only shows the buses/trams in that box. It will work the same way it's done in the javascript. #File:website.js -->
-8. Properly implement favourite stops properly so in the favourites page, it has a button that says "Add current stop to favourites" and make sure it keeps all the bus/tram number filters from the text box so it autofills the stop name text box and the bus/tram number text box
+<!-- 7.1. Make the number filters actually work and make it a number input so no letters allowed and have the number keypad -->
+<!-- 7.2. Remove the number filters. -->
+<!-- 7.3. Implement a bus/tram number filter text box that will go right under the stop name and it will always be available and the purpose is to make sure it only shows the buses/trams in that box. It will work the same way it's done in the javascript. #File:website.js -->
+<!-- 8. Properly implement favourite stops properly so in the favourites page, it has a button that says "Add current stop to favourites" and make sure it keeps all the bus/tram number filters from the text box so it autofills the stop name text box and the bus/tram number text box. By the way, the add to favourites button should be in the favourites menu not on any other page -->
+<!-- 8.1. It doesn't actually show the stop/filters in the favourites menu. It should store the stop name and bus/tram numbers filter and then show that info so the user knows which one it is and maybe call it saved stops but first fix all the other things because I can't save stops and when I press the button, it just sends me back to home page. By the way, the add to favourites button should be in the favourites menu not on any other page -->
 9. Make the circle buttons a tiny bit smaller
 10. Make the circles centred
-11. It's not properly using the search.ch API to get the nicely formatted stop names when doing location detection
+<!-- 11. It's not properly using the search.ch API to get the nicely formatted stop names when doing location detection -->
 12. When refreshing timings, make it cache the old timing then once the new timings have been fully fetched and fully recieved then replace the old timings with the new timings seamlessly so it doesn't show a loading wheel
 13. Make it easier to configure settings in a file. For example, the old javascript code had a part at the top to configure it but maybe we can have config.json:
 
@@ -67,3 +68,14 @@ const defaultSettings = {
 17. Make the cells have a yellow background colour when there is a delay of any time
 18. Right now, I think when the time format is minutes, it calculates the delays but doesn't show a warning but if the time format is 24 hour time, it doesn't calculate the delays and doesn't show the warnings
 19. When exiting the text box, it should clear the autocompletions
+21. Make it update the timings every time one of the circle buttons are pressed if it has been more than 6 seconds since the last update/press on circle button
+22. The tab names don't change language when I switch language
+
+
+# LAST:
+- Make sure it is accessible
+- Add a tutorial for the first time opening the app and optional re-do tutorial in settings screen but add a skip button and make it one of those interactive ones so there is a small box showing instructions for something then you do the action and click next and the first page when opening the app for the first time is en/fr selection
+- Make sure all the text is properly available in both english and french
+
+
+- Try to reduce the system resource usage as much as possible without removing features and only removing bloat and stuff.
