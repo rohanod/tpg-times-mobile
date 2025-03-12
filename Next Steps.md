@@ -12,7 +12,7 @@
 <!-- 8. Properly implement favourite stops properly so in the favourites page, it has a button that says "Add current stop to favourites" and make sure it keeps all the bus/tram number filters from the text box so it autofills the stop name text box and the bus/tram number text box. By the way, the add to favourites button should be in the favourites menu not on any other page -->
 <!-- 8.1. It doesn't actually show the stop/filters in the favourites menu. It should store the stop name and bus/tram numbers filter and then show that info so the user knows which one it is and maybe call it saved stops but first fix all the other things because I can't save stops and when I press the button, it just sends me back to home page. By the way, the add to favourites button should be in the favourites menu not on any other page -->
 <!-- 9. Make the circle buttons a tiny bit smaller -->
-9.5. (Revert) Make the circle buttons a tiny bit bigger to maybe 110
+<!-- 9.5. (Revert) Make the circle buttons a tiny bit bigger to maybe 110 -->
 <!-- 10. Make the circles collectively centred -->
 <!-- 11. It's not properly using the search.ch API to get the nicely formatted stop names when doing location detection -->
 12. When refreshing timings, make it cache the old timing then once the new timings have been fully fetched and fully recieved then replace the old timings with the new timings seamlessly so it doesn't show a loading wheel
@@ -71,6 +71,7 @@ const defaultSettings = {
 19. When exiting the text box, it should clear the autocompletions
 21. Make it update the timings every time one of the circle buttons are pressed if it has been more than 6 seconds since the last update/press on circle button
 22. The tab names don't change language when I switch language
+23. If the bus/tram circle background is black, make it have a white outline 
 
 
 # LAST:

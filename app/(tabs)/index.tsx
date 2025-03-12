@@ -601,10 +601,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   vehicleButton: {
-    width: 90,
-    height: 90,
+    width: 110,
+    height: 110,
     margin: 8,
-    borderRadius: 45,
+    borderRadius: 55,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 3,
