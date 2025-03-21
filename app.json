@@ -9,7 +9,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.majulahsingapura.tpg-times"
+      "bundleIdentifier": "com.rohanodwyer.tpg-times"
     },
     "web": {
       "bundler": "metro",
@@ -29,6 +29,9 @@
       "eas": {
         "projectId": "985d32c4-38f8-46a3-87e8-f0cb25c62207"
       }
+    },
+    "android": {
+      "package": "com.rohanodwyer.tpgtimes"
     }
   }
 }

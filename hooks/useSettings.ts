@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DEFAULT_SETTINGS } from '../config';
 
 interface SettingsState {
   language: 'en' | 'fr';
@@ -14,9 +15,9 @@ interface SettingsState {
 export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
-      language: 'en',
-      darkMode: false,
-      timeFormat: 'minutes',
+      language: DEFAULT_SETTINGS.language,
+      darkMode: DEFAULT_SETTINGS.darkMode,
+      timeFormat: DEFAULT_SETTINGS.timeFormat,
       setLanguage: (language) => set({ language }),
       setDarkMode: (darkMode) => set({ darkMode }),
       setTimeFormat: (timeFormat) => set({ timeFormat }),

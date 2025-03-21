@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
 import * as Location from 'expo-location';
-
-const API_ENDPOINTS = {
-  LOCATIONS: "https://transport.opendata.ch/v1/locations",
-  STATIONBOARD: "https://search.ch/timetable/api/stationboard.fr.json",
-  ARRETS_CSV: "https://raw.githubusercontent.com/rohanod/arrets/refs/heads/main/arrets.csv"
-};
+import { API_ENDPOINTS } from '../config';
 
 interface ArretData {
   name: string;

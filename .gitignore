@@ -33,6 +33,6 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# iOS Build Folder
+# Build Folders
 ios/
-.qodo
+android/

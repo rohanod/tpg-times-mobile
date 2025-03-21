@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
-import { Bus, Clock, Settings } from 'lucide-react-native';
+import { Bus, Settings } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -20,13 +20,6 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, size }) => <Bus size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="favorites"
-        options={{
-          title: 'Favorites',
-          tabBarIcon: ({ color, size }) => <Clock size={size} color={color} />,
         }}
       />
       <Tabs.Screen

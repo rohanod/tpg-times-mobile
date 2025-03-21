@@ -15,8 +15,8 @@
 <!-- 9.5. (Revert) Make the circle buttons a tiny bit bigger to maybe 110 -->
 <!-- 10. Make the circles collectively centred -->
 <!-- 11. It's not properly using the search.ch API to get the nicely formatted stop names when doing location detection -->
-<!-- 12. When refreshing timings, make it cache the old timing then once the new timings have been fully fetched and fully recieved then replace the old timings with the new timings seamlessly so it doesn't show a loading wheel -->
-13. Make it easier to configure settings in a file. For example, the old javascript code had a part at the top to configure it but maybe we can have config.json:
+<!-- 12. When refreshing, make it cache the old timing then once the new timings have been fully fetched and fully received then replace the old timings with the new timings seamlessly so it doesn't show a loading wheel -->
+<!-- 13. Make it easier to configure settings in a file. For example, the old javascript code had a part at the top to configure it but maybe we can have config.json but make sure EVERYTHING uses it and there isn't just a configuration option for no reason:
 
 const API_ENDPOINTS = {
     LOCATIONS: "https://transport.opendata.ch/v1/locations",
@@ -62,16 +62,20 @@ const defaultSettings = {
     darkMode: false,
     language: UI_CONFIG.LANGUAGES.EN,
     timeFormat: "minutes"
-}
-14. Make the search autocompletions hover above the bus/tram numbers text box and have a done button on the keyboard to close the keyboard and suggestions
+} -->
+14. Make the search autocompletions hover above the bus/tram numbers text box but under the stop name text box.
 15. Make all the icons for the bus/tram numbers always be in the same place for each "stop session"(Each time viewing timings for one stop but if you go to a different stop, it's a different session and even if you go back to the same stop, it's a different session)
-16. Allow scrolling up a bit in the popup so the user can see more times(If there are more times than the popup can fit)
+16. Allow scrolling up a bit in the popup so the user can see more times(If there are more times than the popup can fit and it should be a pull up screen. Use this to help: https://www.npmjs.com/package/@gorhom/bottom-sheet, https://github.com/gorhom/react-native-bottom-sheet. Clone the repo and install package to use it.)
 17. Make the cells have a yellow background colour when there is a delay of any time
 18. Right now, I think when the time format is minutes, it calculates the delays but doesn't show a warning but if the time format is 24 hour time, it doesn't calculate the delays and doesn't show the warnings
 19. When exiting the text box, it should clear the autocompletions
 21. Make it update the timings every time one of the circle buttons are pressed if it has been more than 6 seconds since the last update/press on circle button
 22. The tab names don't change language when I switch language
 23. If the bus/tram circle background is black, make it have a white outline 
+24. Make the container with the timings fill the screen but leave space for the other elements and the tabs
+25. Add a favourites stop feature where if the user has a currently selected stop in the home page, the favourites menu will have a "Add this stop to favourites" button and once clicked on, will add the stop to favourites and if there are any filters, it will save them too. Once clicked on a favourite, it will go back to main page with stop name and bus/tram number(if applicable) filled out and make sure there is a delete button to remove a favourite
+26. Refresh arrets.csv every month but have an option to refresh manually in settings
+27. Implement a widget where the user can choose any stop with free text input and optional number filter and it will show the timings for that stop in the widget. Here is the git repo with an example of doing cross platform widgets: https://github.com/ImBIOS/RNWidget you can clone it to see how they do it
 
 
 # LAST:
