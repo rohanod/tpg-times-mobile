@@ -1,14 +1,24 @@
 {
-    "build": {
-      "preview": {
-        "ios": {
-          "simulator": true
-        },
-        "android": {
-          "simulator": true
-        }
-      },
-      "production": {}
+  "cli": {
+    "version": ">= 16.0.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "buildConfiguration": "Release"
+      }
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": true
     }
+  },
+  "submit": {
+    "production": {}
   }
-  
+}

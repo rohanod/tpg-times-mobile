@@ -16,6 +16,12 @@ interface StopSuggestion {
   name: string;
 }
 
+// Extended error interface for location errors
+interface LocationError {
+  error: string;
+  message?: string;
+}
+
 export const useArretsCsv = () => {
   const [arretsList, setArretsList] = useState<ArretData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -138,65 +144,97 @@ export const useArretsCsv = () => {
   };
 
   // Find the nearest TPG stop using arrets.csv
-  const findNearestStop = async (): Promise<StopSuggestion | null> => {
+  const findNearestStop = async (): Promise<StopSuggestion | null | LocationError> => {
     try {
       // Request location permission
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        throw new Error('Location permission denied');
+        return { error: 'location_permission_denied' };
       }
       
-      // Get current location
-      const location = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = location.coords;
-      
-      // Make sure we have the arrets data
-      if (arretsList.length === 0) {
-        await fetchArretsCsv();
-      }
-      
-      // Calculate distances to all stops
-      const stopsWithDistances = arretsList
-        .filter(stop => stop.active)
-        .map(stop => ({
-          ...stop,
-          distance: calculateDistance(latitude, longitude, stop.coords[0], stop.coords[1])
-        }))
-        .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
-      
-      // Get the nearest stop
-      const nearestStop = stopsWithDistances[0];
-      if (!nearestStop) return null;
-      
-      // First format as {Municipality}, {stop}
-      const formattedName = nearestStop.fullName;
-      
-      // Use transport.opendata.ch API to get nicely formatted name and ID
       try {
-        // Use the locations API directly to get the proper formatted name and ID
-        const response = await fetch(
-          `${API_ENDPOINTS.LOCATIONS}?query=${encodeURIComponent(formattedName)}&type=station`
-        );
-        const data = await response.json();
+        // Get current location with a 10-second timeout (increased from 5 seconds)
+        const location = await Promise.race([
+          Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced
+          }),
+          new Promise<never>((_, reject) => {
+            setTimeout(() => {
+              console.log('Location request timed out after 10 seconds');
+              reject(new Error('Location request timed out'));
+            }, 10000);
+          })
+        ]);
+        const { latitude, longitude } = location.coords;
         
-        if (data.stations && data.stations.length > 0) {
-          return {
-            id: data.stations[0].id,
-            name: data.stations[0].name
+        // Make sure we have the arrets data
+        if (arretsList.length === 0) {
+          await fetchArretsCsv();
+        }
+        
+        // Calculate distances to all stops
+        const stopsWithDistances = arretsList
+          .filter(stop => stop.active)
+          .map(stop => ({
+            ...stop,
+            distance: calculateDistance(latitude, longitude, stop.coords[0], stop.coords[1])
+          }))
+          .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
+        
+        // Get the nearest stop
+        const nearestStop = stopsWithDistances[0];
+        if (!nearestStop) return { error: 'no_stops_found' };
+        
+        // First format as {Municipality}, {stop}
+        const formattedName = nearestStop.fullName;
+        
+        // Use transport.opendata.ch API to get nicely formatted name and ID
+        try {
+          // Use the locations API directly to get the proper formatted name and ID
+          const response = await fetch(
+            `${API_ENDPOINTS.LOCATIONS}?query=${encodeURIComponent(formattedName)}&type=station`
+          );
+          const data = await response.json();
+          
+          if (data.stations && data.stations.length > 0) {
+            return {
+              id: data.stations[0].id,
+              name: data.stations[0].name
+            };
+          }
+        } catch (err) {
+          console.error('Error with locations API:', err);
+          // Continue with fallback - this is not a critical error
+        }
+        
+        // Fallback to just returning the nearest stop without an ID
+        return {
+          id: `local-${Date.now()}`,
+          name: formattedName
+        };
+      } catch (locationError) {
+        // Log the error but with a more user-friendly message
+        console.log('Location service issue:', locationError?.message || 'Unknown error');
+        
+        // Check if the error is a timeout error
+        if (locationError instanceof Error && locationError.message === 'Location request timed out') {
+          return { 
+            error: 'location_timeout',
+            message: 'Location services took too long to respond. This might be due to poor GPS signal.'
           };
         }
-      } catch (err) {
-        console.error('Error with locations API:', err);
+        
+        return { 
+          error: 'location_unavailable',
+          message: 'Unable to determine your location. Please check your device settings.'
+        };
       }
-      
-      // Fallback to just returning the nearest stop without an ID
-      return {
-        id: `local-${Date.now()}`,
-        name: formattedName
-      };
     } catch (err) {
-      console.error('Error finding nearest stop:', err);
-      return null;
+      console.log('General location service error:', err?.message || 'Unknown error');
+      return { 
+        error: 'location_service_error',
+        message: 'There was a problem with location services. Please check your device settings.'
+      };
     }
   };
 

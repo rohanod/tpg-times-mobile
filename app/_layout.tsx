@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useFrameworkReady } from '@/hooks/useFrameworkReady';
-import { useSettings } from '@/hooks/useSettings';
+import { useFrameworkReady } from '~/hooks/useFrameworkReady';
+import { useSettings } from '~/hooks/useSettings';
+import { COLORS } from '~/config/theme';
 
 export default function RootLayout() {
   useFrameworkReady();
@@ -14,7 +15,7 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false,
           contentStyle: {
-            backgroundColor: darkMode ? '#000000' : '#ffffff'
+            backgroundColor: darkMode ? COLORS.BACKGROUND.DARK : COLORS.BACKGROUND.LIGHT
           }
         }}
       >

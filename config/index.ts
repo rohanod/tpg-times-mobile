@@ -1,4 +1,7 @@
 // Centralized configuration for the TPG Times Mobile app
+import { COLORS, getThemeColors } from './theme';
+
+export { COLORS, getThemeColors };
 
 export const API_ENDPOINTS = {
   LOCATIONS: "https://transport.opendata.ch/v1/locations",

@@ -63,9 +63,9 @@ const defaultSettings = {
     language: UI_CONFIG.LANGUAGES.EN,
     timeFormat: "minutes"
 } -->
-14. Make the search autocompletions hover above the bus/tram numbers text box but under the stop name text box.
+<!-- 14. Make the search autocompletions hover above the bus/tram numbers text box but under the stop name text box. -->
 15. Make all the icons for the bus/tram numbers always be in the same place for each "stop session"(Each time viewing timings for one stop but if you go to a different stop, it's a different session and even if you go back to the same stop, it's a different session)
-16. Allow scrolling up a bit in the popup so the user can see more times(If there are more times than the popup can fit and it should be a pull up screen. Use this to help: https://www.npmjs.com/package/@gorhom/bottom-sheet, https://github.com/gorhom/react-native-bottom-sheet. Clone the repo and install package to use it.)
+16. Allow scrolling up a bit in the popup so the user can see more times(If there are more times than the popup can fit and it should be a pull up screen. Use this to help: https://www.npmjs.com/package/@gorhom/bottom-sheet, https://github.com/gorhom/react-native-bottom-sheet. Clone the repo and install package to use it.) Use #File:ReactNativeBottomSheet.md to help use react native bottom sheet for the timings popups.
 17. Make the cells have a yellow background colour when there is a delay of any time
 18. Right now, I think when the time format is minutes, it calculates the delays but doesn't show a warning but if the time format is 24 hour time, it doesn't calculate the delays and doesn't show the warnings
 19. When exiting the text box, it should clear the autocompletions
@@ -76,12 +76,43 @@ const defaultSettings = {
 25. Add a favourites stop feature where if the user has a currently selected stop in the home page, the favourites menu will have a "Add this stop to favourites" button and once clicked on, will add the stop to favourites and if there are any filters, it will save them too. Once clicked on a favourite, it will go back to main page with stop name and bus/tram number(if applicable) filled out and make sure there is a delete button to remove a favourite
 26. Refresh arrets.csv every month but have an option to refresh manually in settings
 27. Implement a widget where the user can choose any stop with free text input and optional number filter and it will show the timings for that stop in the widget. Here is the git repo with an example of doing cross platform widgets: https://github.com/ImBIOS/RNWidget you can clone it to see how they do it
+28. 
+29. Make the splash screen the animated assets/images/loading.svg
+30. If there are multiple stops with the same name, just show it once
+31. The API gives this response:
+
+{
+	"time": "2021-02-08 13:59:00",
+	"*G": "S",
+	"*L": "13",
+	"*Z": "019351",
+	"type": "strain",
+	"line": "S13",
+	"operator": "SOB-sob",
+	"color": "039~fff~",
+	"type_name": "S-Bahn",
+	"terminal": {
+		"id": "8503206",
+		"name": "Wädenswil",
+		"x": 693645,
+		"y": 231669,
+		"lon": 8.675218,
+		"lat": 47.229306
+	}
+},
+
+in color, first part is the hex code for the background colour and the second part is the hex code for the text colour(And border in our case)
+32. Make the border for the stop name box border, bus/tram number box border, suggestions container and individual suggestions border these colours: borderColor: darkMode ? '#333333' : '#DDDDDD'
 
 
 # LAST:
 - Make sure it is accessible
 - Add a tutorial for the first time opening the app and optional re-do tutorial in settings screen but add a skip button and make it one of those interactive ones so there is a small box showing instructions for something then you do the action and click next and the first page when opening the app for the first time is en/fr selection
 - Make sure all the text is properly available in both english and french
+- Remove anything not needed
+- Make sure it doesn't crash
+- Make sure it doesn't have any bugs
+- Make sure it doesn't have any security vulnerabilities
 
 
 - Try to reduce the system resource usage as much as possible without removing features and only removing bloat and stuff.

@@ -1,7 +1,13 @@
 {
   "expo": {
-    "name": "tpg-times",
+    "name": "TPG Times",
     "slug": "tpg-times",
+    "updates": {
+      "url": "https://u.expo.dev/7d689592-1fb0-4eb4-963f-6493cb6a9cb3",
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD",
+      "enabled": true
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "tpgtimes",
@@ -9,7 +15,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rohanodwyer.tpg-times"
+      "bundleIdentifier": "com.rohanodwyer.tpgtimes",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "web": {
       "bundler": "metro",
@@ -17,7 +26,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-updates",
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "${PRODUCT_NAME} needs to access your location to show you nearby stops"  
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -27,11 +43,20 @@
         "origin": false
       },
       "eas": {
-        "projectId": "985d32c4-38f8-46a3-87e8-f0cb25c62207"
+        "projectId": "7d689592-1fb0-4eb4-963f-6493cb6a9cb3"
       }
     },
     "android": {
-      "package": "com.rohanodwyer.tpgtimes"
-    }
+      "package": "com.rohanodwyer.tpgtimes",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#FFFFFF",
+        "monochromeImage": "./assets/images/icon.png"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "owner": "majulahsingapura"
   }
 }

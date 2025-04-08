@@ -16,6 +16,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
+import { COLORS, getThemeColors } from '../../config/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapPin, Search, X, Plus, RefreshCw } from 'lucide-react-native';
 import * as Location from 'expo-location';
@@ -25,7 +26,7 @@ import { useCurrentStop } from '../../hooks/useCurrentStop';
 import moment from 'moment-timezone';
 import { formatTime } from '../../utils/formatTime';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { API_ENDPOINTS, TIME_CONFIG } from '../../config';
+import { API_ENDPOINTS, TIME_CONFIG, UI_CONFIG } from '../../config';
 
 // Define interfaces for better type safety
 interface Stop {
@@ -42,15 +43,12 @@ interface Departure {
   color: string;
 }
 
-// This function needs to be inside the StopsScreen component to access the hook
-// Moving it inside the component in the next change
-
 export default function StopsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
-  // Use local state for UI purposes
+  const [inputFocused, setInputFocused] = useState(false);
   const [selectedStop, setSelectedStop] = useState<Stop | null>(null);
   const [departures, setDepartures] = useState<any[]>([]);
   const [vehicleNumberInput, setVehicleNumberInput] = useState('');
@@ -58,8 +56,9 @@ export default function StopsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const { language, timeFormat, darkMode } = useSettings();
+  const theme = getThemeColors(darkMode);
   // Use the global state for sharing between tabs
-  const { currentStop, setCurrentStop, setVehicleNumberFilters: setGlobalFilters } = useCurrentStop();
+  const { currentStop, setCurrentStop, setVehicleNumberFilters: setGlobalFilters, vehiclePositions, setVehiclePositions } = useCurrentStop();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const router = useRouter();
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -105,8 +104,11 @@ export default function StopsScreen() {
       // to only return TPG stops
       const filteredSuggestions = await filterSuggestions(data.stations);
       
-      console.log('Filtered TPG suggestions:', filteredSuggestions.length);
-      return filteredSuggestions;
+      // Limit suggestions to 4 as per UI_CONFIG.SUGGESTIONS_LIMIT
+      const limitedSuggestions = filteredSuggestions.slice(0, 4);
+      
+      console.log('Filtered TPG suggestions:', filteredSuggestions.length, 'Limited to:', limitedSuggestions.length);
+      return limitedSuggestions;
     } catch (error) {
       console.error('Error fetching stop suggestions:', error);
       return [];
@@ -363,7 +365,7 @@ export default function StopsScreen() {
     }
   };
   
-  // Effect to debounce search and show suggestions after 800ms of inactivity
+  // Effect to debounce search and show suggestions after 400ms of inactivity
   useEffect(() => {
     // Don't show suggestions if we just selected a stop
     if (justSelected) {
@@ -396,14 +398,16 @@ export default function StopsScreen() {
         clearTimeout(searchTimeoutRef.current);
       }
       
-      // Set a new timeout for 800ms after last keystroke
+      // Set a new timeout for 400ms after last keystroke (reduced from 800ms)
       searchTimeoutRef.current = setTimeout(async () => {
         console.log('Debounced search triggered for query:', searchQuery);
         setSearchLoading(true);
         try {
           const results = await getStopSuggestions(searchQuery);
           console.log('Debounced search found suggestions:', results.length);
-          setSuggestions(results);
+          // Limit suggestions to 4 as per UI_CONFIG.SUGGESTIONS_LIMIT
+          const limitedResults = results.slice(0, UI_CONFIG.SUGGESTIONS_LIMIT);
+          setSuggestions(limitedResults);
           setNoResultsFound(results.length === 0);
         } catch (error) {
           console.error('Error getting suggestions:', error);
@@ -411,7 +415,7 @@ export default function StopsScreen() {
         } finally {
           setSearchLoading(false);
         }
-      }, 800); // 800ms debounce time
+      }, 400); // 400ms debounce time (reduced from 800ms for faster response)
     } else {
       // Clear suggestions if search query is too short
       setSuggestions([]);
@@ -426,116 +430,31 @@ export default function StopsScreen() {
     };
   }, [searchQuery, justSelected, hasActiveSelection, selectedStop]);
   
-  // New effect to auto-update departures after 2 seconds of inactivity in the search box
-  const departureUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  useEffect(() => {
-    // Only proceed if we have a valid search query with at least 2 characters
-    if (searchQuery.trim().length > 1) {
-      // Clear any existing timeout
-      if (departureUpdateTimeoutRef.current) {
-        clearTimeout(departureUpdateTimeoutRef.current);
-      }
-      
-      // Set a new timeout for 2000ms (2 seconds) after last keystroke
-      departureUpdateTimeoutRef.current = setTimeout(async () => {
-        console.log('Auto-updating departures for query after 2s:', searchQuery);
-        
-        // If we have suggestions, use the first one to fetch departures
-        if (suggestions.length > 0) {
-          const stopToUse = suggestions[0];
-          console.log('Using first suggestion for auto-update:', stopToUse.name);
-          
-          // Update the selected stop
-          const stopData = { id: stopToUse.id, name: stopToUse.name };
-          setSelectedStop(stopData);
-          setCurrentStop(stopData);
-          setHasActiveSelection(true);
-          
-          // Fetch departures for this stop
-          setIsAutoRefreshing(true);
-          try {
-            await fetchDepartures(stopToUse.name);
-          } catch (error) {
-            console.error('Error auto-updating departures:', error);
-          } finally {
-            setIsAutoRefreshing(false);
-          }
-        } else if (searchQuery.trim().length > 2) {
-          // If no suggestions yet but query is valid, try to get suggestions and then fetch
-          try {
-            const results = await getStopSuggestions(searchQuery);
-            if (results.length > 0) {
-              const stopToUse = results[0];
-              console.log('Found suggestion for auto-update:', stopToUse.name);
-              
-              // Update the selected stop
-              const stopData = { id: stopToUse.id, name: stopToUse.name };
-              setSelectedStop(stopData);
-              setCurrentStop(stopData);
-              setHasActiveSelection(true);
-              
-              // Fetch departures for this stop
-              setIsAutoRefreshing(true);
-              try {
-                await fetchDepartures(stopToUse.name);
-              } catch (error) {
-                console.error('Error auto-updating departures:', error);
-              } finally {
-                setIsAutoRefreshing(false);
-              }
-            }
-          } catch (error) {
-            console.error('Error getting suggestions for auto-update:', error);
-          }
-        }
-      }, 2000); // 2 second debounce time for auto-updating departures
+  const handleSearchSubmit = async () => {
+    // Clear any pending timeouts
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
     }
     
-    // Cleanup function
-    return () => {
-      if (departureUpdateTimeoutRef.current) {
-        clearTimeout(departureUpdateTimeoutRef.current);
-      }
-    };
-  }, [searchQuery, suggestions]);
-  
-  const handleSearchSubmit = async () => {
-    if (searchQuery.trim().length > 0) {
-      // Clear any pending timeouts
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-        searchTimeoutRef.current = null;
-      }
-      
-      // If we already have suggestions, simply select the first one
-      if (suggestions.length > 0) {
-        await handleStopSelect(suggestions[0]);
-        return;
-      }
-      
-      // Otherwise, fetch suggestions one more time
-      setSearchLoading(true);
-      setNoResultsFound(false);
-      try {
-        const newSuggestions = await getStopSuggestions(searchQuery);
-        setSuggestions(newSuggestions);
-        
-        // If there are suggestions, automatically select the first one
-        if (newSuggestions && newSuggestions.length > 0) {
-          await handleStopSelect(newSuggestions[0]);
-        } else {
-          setNoResultsFound(true);
-        }
-      } catch (error) {
-        console.error('Error during search:', error);
-        alert(language === 'en' ? 'Error searching for stops' : 'Erreur lors de la recherche d\'arrêts');
-      } finally {
-        setSearchLoading(false);
-      }
-    } else {
-      setSuggestions([]);
+    // Simply dismiss the keyboard and hide suggestions without selecting a stop
+    Keyboard.dismiss();
+    setSuggestions([]);
+    setInputFocused(false);
+    
+    // If there's no query, nothing more to do
+    if (!searchQuery.trim().length) {
+      return;
     }
+    
+    // If we have an active selection, keep it
+    if (hasActiveSelection && selectedStop) {
+      return;
+    }
+    
+    // Otherwise, we don't automatically select anything
+    // This allows the user to just dismiss suggestions while keeping focus
+    // and maintaining their current text input value
   };
 
   // Effect for handling stop selection and refresh
@@ -572,8 +491,26 @@ export default function StopsScreen() {
       // Use the findNearestStop function from useArretsCsv hook
       const nearestStop = await findNearestStop();
       
-      if (nearestStop) {
+      if (nearestStop && 'name' in nearestStop) {
         handleStopSelect(nearestStop);
+      } else if (nearestStop && 'error' in nearestStop) {
+        // Handle specific error types with custom messages when available
+        if (nearestStop.error === 'location_timeout') {
+          // Use the custom message if available, otherwise fall back to default message
+          const message = nearestStop.message || 
+            (language === 'en' ? 'Location request timed out. Please try again.' : 'La demande de localisation a expiré. Veuillez réessayer.');
+          console.log('Location timeout handled gracefully');
+          alert(message);
+        } else if (nearestStop.error === 'location_permission_denied') {
+          alert(language === 'en' ? 'Location permission denied. Please enable location services for this app.' : 'Permission de localisation refusée. Veuillez activer les services de localisation pour cette application.');
+        } else if (nearestStop.error === 'no_stops_found') {
+          alert(language === 'en' ? 'No TPG stops found nearby' : 'Aucun arrêt TPG trouvé à proximité');
+        } else {
+          // Use custom message if available
+          const message = nearestStop.message || 
+            (language === 'en' ? 'Error getting location' : 'Erreur de localisation');
+          alert(message);
+        }
       } else {
         alert(language === 'en' ? 'No TPG stops found nearby' : 'Aucun arrêt TPG trouvé à proximité');
       }
@@ -595,6 +532,8 @@ export default function StopsScreen() {
     if (selectedStop?.name !== stop.name) {
       // Only clear departures if selecting a different stop
       setIsInitialFetch(true);
+      // Reset vehicle positions for the new stop session
+      setVehiclePositions([]);
     }
     
     // Set the input field text to the selected stop name
@@ -744,7 +683,32 @@ export default function StopsScreen() {
         
         // Process the complete data and update the UI with a single state change
         // This ensures we don't show empty states or loading indicators during refresh
-        setDepartures(Object.values(filteredGroupedDepartures));
+        const departuresArray = Object.values(filteredGroupedDepartures);
+        
+        // Update vehicle positions for any new vehicles that weren't in the initial fetch
+        if (vehiclePositions.length > 0) {
+          const existingKeys = new Set(vehiclePositions.map(p => p.vehicleKey));
+          const newVehicles = departuresArray.filter(v => !existingKeys.has(`${v.vehicleType}-${v.number}`));
+          
+          if (newVehicles.length > 0) {
+            // Find the highest position currently used
+            const maxPosition = vehiclePositions.reduce((max, p) => Math.max(max, p.position), -1);
+            
+            // Add new vehicles with positions after the existing ones
+            const newPositions = [...vehiclePositions];
+            newVehicles.forEach((vehicle, index) => {
+              newPositions.push({
+                vehicleKey: `${vehicle.vehicleType}-${vehicle.number}`,
+                position: maxPosition + 1 + index
+              });
+            });
+            
+            // Update the stored positions
+            setVehiclePositions(newPositions);
+          }
+        }
+        
+        setDepartures(departuresArray);
         
         // Now that we have data, mark initial fetch as complete
         if (isInitialFetch) {
@@ -821,6 +785,84 @@ export default function StopsScreen() {
       selectedVehicleNumberRef.current = null;
     });
   };
+  
+  // Function to maintain consistent positions for vehicle buttons within a stop session
+  const getSortedDepartures = (departuresArray) => {
+    if (!departuresArray || departuresArray.length === 0) return [];
+    
+    // Create a map of vehicle keys to their current positions
+    const currentVehicleKeys = departuresArray.map(item => `${item.vehicleType}-${item.number}`);
+    
+    // If we don't have any stored positions yet for this stop session, initialize them
+    if (vehiclePositions.length === 0 && departuresArray.length > 0) {
+      // Create initial positions based on the first fetch
+      const initialPositions = departuresArray.map((item, index) => ({
+        vehicleKey: `${item.vehicleType}-${item.number}`,
+        position: index
+      }));
+      
+      // Store these positions for this stop session
+      setVehiclePositions(initialPositions);
+      return departuresArray;
+    }
+    
+    // If we have stored positions, use them to sort the departures
+    if (vehiclePositions.length > 0) {
+      // Create a copy of the departures array to sort
+      const sortedDepartures = [...departuresArray];
+      
+      // Create a map of vehicle keys to their positions for faster lookup
+      const positionMap = {};
+      vehiclePositions.forEach(pos => {
+        positionMap[pos.vehicleKey] = pos.position;
+      });
+      
+      // Sort the departures based on their stored positions
+      sortedDepartures.sort((a, b) => {
+        const keyA = `${a.vehicleType}-${a.number}`;
+        const keyB = `${b.vehicleType}-${b.number}`;
+        
+        // If both have positions, sort by position
+        if (positionMap[keyA] !== undefined && positionMap[keyB] !== undefined) {
+          return positionMap[keyA] - positionMap[keyB];
+        }
+        
+        // If only one has a position, prioritize the one with a position
+        if (positionMap[keyA] !== undefined) return -1;
+        if (positionMap[keyB] !== undefined) return 1;
+        
+        // If neither has a position, maintain original order
+        return 0;
+      });
+      
+      // Check for new vehicles that weren't in the original positions
+      const newVehicles = sortedDepartures.filter(item => {
+        const key = `${item.vehicleType}-${item.number}`;
+        return positionMap[key] === undefined;
+      });
+      
+      // If we have new vehicles, add them to the positions
+      if (newVehicles.length > 0) {
+        // Find the next available position
+        const maxPosition = Math.max(...vehiclePositions.map(p => p.position), -1);
+        
+        // Create new positions for the new vehicles
+        const newPositions = newVehicles.map((item, index) => ({
+          vehicleKey: `${item.vehicleType}-${item.number}`,
+          position: maxPosition + 1 + index
+        }));
+        
+        // Update the positions
+        setVehiclePositions([...vehiclePositions, ...newPositions]);
+      }
+      
+      return sortedDepartures;
+    }
+    
+    // If we reach here, it means we have no stored positions yet
+    // Just return the original array
+    return departuresArray;
+  };
 
   const handleClearSearch = () => {
     setSearchQuery('');
@@ -831,11 +873,42 @@ export default function StopsScreen() {
   
   // Function to dismiss suggestions when exiting the text box
   const handleTextInputBlur = () => {
+    setInputFocused(false);
     // Add a small delay to allow for selection before clearing
     setTimeout(() => {
       setSuggestions([]);
     }, 200);
   };
+
+  // Function to handle focus on the text input
+  const handleTextInputFocus = () => {
+    setInputFocused(true);
+    // If there's text in the search box, reset active selection flag to allow new suggestions
+    if (searchQuery.trim().length > 1) {
+      setHasActiveSelection(false);
+      // Trigger search if there's enough text
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      
+      searchTimeoutRef.current = setTimeout(async () => {
+        setSearchLoading(true);
+        try {
+          const results = await getStopSuggestions(searchQuery);
+          setSuggestions(results.slice(0, 4));
+          setNoResultsFound(results.length === 0);
+        } catch (error) {
+          console.error('Error getting suggestions on focus:', error);
+          setSuggestions([]);
+        } finally {
+          setSearchLoading(false);
+        }
+      }, 300); // Shorter timeout for better responsiveness on focus
+    }
+  };
+
+  // We already have a handleSearchSubmit function defined above, so we'll use that one
+  // and remove this duplicate declaration
 
   // Effect for cleanup of all timeouts
   useEffect(() => {
@@ -879,28 +952,68 @@ export default function StopsScreen() {
         </View>
 
         <View style={styles.searchContainer}>
-          <View style={[styles.inputContainer, { backgroundColor: darkMode ? '#1C1C1E' : '#F5F5F5' }]}>
-            <Search size={20} color="#FF6600" style={styles.searchIcon} />
-            <TextInput
-              style={[styles.input, { color: darkMode ? '#FFFFFF' : '#333' }]}
-              placeholder={language === 'en' ? 'Enter stop name' : 'Nom de l\'arrêt'}
-              value={searchQuery}
-              onChangeText={handleSearchInputChange}
-              onSubmitEditing={handleSearchSubmit}
-              onBlur={handleTextInputBlur}
-              returnKeyType="done"
-              blurOnSubmit={true}
-              placeholderTextColor={darkMode ? '#666666' : '#999'}
-              autoCorrect={false}
-              autoCapitalize="none"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={handleClearSearch} style={styles.clearButton}>
-                <X size={18} color={darkMode ? '#999999' : '#666666'} />
-              </TouchableOpacity>
+          <View style={styles.searchInputWrapper}>
+            <View style={[styles.inputContainer, { 
+              backgroundColor: darkMode ? '#1C1C1E' : '#F5F5F5',
+              borderRadius: 10,
+              borderBottomLeftRadius: suggestions && suggestions.length > 0 ? 0 : 10,
+              borderBottomRightRadius: suggestions && suggestions.length > 0 ? 0 : 10,
+              borderBottomWidth: suggestions && suggestions.length > 0 ? 0 : 1,
+              borderColor: theme.stopNameBorder
+            }]}>
+              <Search size={20} color="#FF6600" style={styles.searchIcon} />
+              <TextInput
+                style={[styles.input, { color: darkMode ? '#FFFFFF' : '#333' }]}
+                placeholder={language === 'en' ? 'Enter stop name' : 'Nom de l\'arrêt'}
+                value={searchQuery}
+                onChangeText={handleSearchInputChange}
+                onSubmitEditing={handleSearchSubmit}
+                onBlur={handleTextInputBlur}
+                onFocus={handleTextInputFocus}
+                returnKeyType="done"
+                blurOnSubmit={true}
+                placeholderTextColor={darkMode ? '#666666' : '#999'}
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={handleClearSearch} style={styles.clearButton}>
+                  <X size={18} color={darkMode ? '#999999' : '#666666'} />
+                </TouchableOpacity>
+              )}
+              {searchLoading && <ActivityIndicator size="small" color="#FF6600" style={styles.loadingIndicator} />}
+            </View>
+            
+            {/* Suggestions list positioned directly below search input */}
+            {inputFocused && suggestions && suggestions.length > 0 && (
+              <FlatList
+                data={suggestions}
+                scrollEnabled={false}
+                keyboardShouldPersistTaps="handled"
+                renderItem={({ item, index }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.suggestion,
+                      index === (suggestions && suggestions.length - 1) ? styles.lastSuggestion : {},
+                      { 
+                        backgroundColor: theme.background,
+                        borderBottomColor: theme.suggestionsBorder,
+                        borderBottomWidth: index === (suggestions && suggestions.length - 1) ? 0 : 1
+                      }
+                    ]}
+                    onPress={() => handleStopSelect(item)}
+                  >
+                    <Text style={[styles.suggestionText, { color: theme.text }]}>{item.name}</Text>
+                  </TouchableOpacity>
+                )}
+                style={[styles.suggestionsList, {
+                  backgroundColor: theme.background,
+                  borderColor: theme.suggestionsBorder
+                }]}
+              />
             )}
-            {searchLoading && <ActivityIndicator size="small" color="#FF6600" style={styles.loadingIndicator} />}
           </View>
+          
           <TouchableOpacity
             style={styles.locationButton}
             onPress={handleLocationPress}
@@ -909,26 +1022,10 @@ export default function StopsScreen() {
           </TouchableOpacity>
         </View>
         
-        {/* Suggestions list positioned below search input and above filter container */}
-        <View style={[styles.searchSuggestionsWrapper, { zIndex: 20 }]}>
-          {suggestions.length > 0 && (
-            <FlatList
-              data={suggestions}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[styles.suggestion, { backgroundColor: darkMode ? '#1C1C1E' : '#FFFFFF', borderBottomColor: darkMode ? '#333333' : '#EEEEEE' }]}
-                  onPress={() => handleStopSelect(item)}>
-                  <Text style={[styles.suggestionText, { color: darkMode ? '#FFFFFF' : '#333' }]}>{item.name}</Text>
-                </TouchableOpacity>
-              )}
-              style={[styles.suggestionsList, { backgroundColor: darkMode ? '#1C1C1E' : '#FFFFFF' }]}
-            />        
-          )}
-        </View>
+        {/* Removed the duplicate suggestions list */}
         
         {/* Bus/Tram number filter with chips */}
-        <View style={[styles.filterContainer, { backgroundColor: darkMode ? '#1C1C1E' : '#F5F5F5' }]}>
+        <View style={[styles.filterContainer, { backgroundColor: darkMode ? '#1C1C1E' : '#F5F5F5', borderColor: theme.vehicleNumberBorder }]}>
           <View style={styles.filterInputContainer}>
             <TextInput
               style={[styles.filterInput, { color: darkMode ? '#FFFFFF' : '#333' }]}
@@ -972,7 +1069,7 @@ export default function StopsScreen() {
         </View>
 
         {noResultsFound && !loading && (
-          <View style={[styles.noResultsContainer, { backgroundColor: darkMode ? '#1C1C1E' : '#F5F5F5' }]}>
+          <View style={[styles.noResultsContainer, { backgroundColor: darkMode ? '#1C1C1E' : '#F5F5F5', borderColor: theme.border }]}>
             <Text style={[styles.noResultsText, { color: darkMode ? '#FFFFFF' : '#333' }]}>
               {language === 'en' ? 'No stops found. Please try another search.' : 'Aucun arrêt trouvé. Veuillez essayer une autre recherche.'}
             </Text>
@@ -984,7 +1081,7 @@ export default function StopsScreen() {
         ) : (
           <View style={styles.vehiclesContainer}>
             <FlatList
-              data={departures}
+              data={getSortedDepartures(departures)}
               keyExtractor={(item) => `${item.vehicleType}-${item.number}`}
               numColumns={3}
               renderItem={({ item }) => (
@@ -1019,7 +1116,7 @@ export default function StopsScreen() {
             >
               <Animated.View 
                 style={[styles.modalContent, 
-                  { backgroundColor: darkMode ? '#1C1C1E' : '#FFFFFF' },
+                  { backgroundColor: darkMode ? '#1C1C1E' : '#FFFFFF', borderColor: theme.border },
                   {
                     transform: [{
                       translateY: fadeAnim.interpolate({
@@ -1109,7 +1206,6 @@ export default function StopsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   header: {
     padding: 20,
@@ -1121,7 +1217,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FF6600',
     flex: 1,
     textAlign: 'center',
   },
@@ -1130,14 +1225,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     gap: 10,
+    zIndex: 20,
+  },
+  searchInputWrapper: {
+    flex: 1,
+    zIndex: 20,
+    position: 'relative',
   },
   inputContainer: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
     paddingHorizontal: 15,
+    borderWidth: 1,
   },
   searchIcon: {
     marginRight: 10,
@@ -1146,16 +1247,29 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     fontSize: 16,
-    color: '#333',
   },
-  // Filter styles
+  suggestionsList: {
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
+    zIndex: 1000, // Increased from 10 to 1000 to ensure it's in front of all other elements
+    maxHeight: 220, // Reduced from 250 to 220 to make it a tiny bit smaller
+    backgroundColor: '#fff',
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    // borderColor is set dynamically based on theme
+    overflow: 'hidden',
+  },
   filterContainer: {
     marginTop: 10,
     marginHorizontal: 20,
-    backgroundColor: '#F5F5F5',
     borderRadius: 10,
     paddingHorizontal: 15,
     paddingVertical: 10,
+    borderWidth: 1,
   },
   filterInputContainer: {
     flexDirection: 'row',
@@ -1165,16 +1279,15 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     fontSize: 16,
-    color: '#333',
   },
   addButton: {
-    backgroundColor: '#FF6600',
     width: 36,
     height: 36,
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 10,
+    backgroundColor: COLORS.PRIMARY,
   },
   chipsContainer: {
     marginTop: 10,
@@ -1188,7 +1301,6 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#DDDDDD',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -1204,7 +1316,7 @@ const styles = StyleSheet.create({
   locationButton: {
     width: 50,
     height: 50,
-    backgroundColor: '#FF6600',
+    backgroundColor: COLORS.PRIMARY,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1212,42 +1324,20 @@ const styles = StyleSheet.create({
   loader: {
     marginLeft: 10,
   },
-  searchSuggestionsWrapper: {
-    position: 'relative',
-    marginHorizontal: 20, // Match the paddingHorizontal of searchContainer
-    marginTop: 0,
-    width: '100%', // Ensure the wrapper takes full width within its constraints
-    alignSelf: 'center', // Center the wrapper
-    zIndex: 20,
-  },
-  suggestionsList: {
-    maxHeight: 200,
-    marginTop: 0,
-    marginBottom: 0,
-    paddingHorizontal: 0,
-    position: 'absolute', // Use absolute positioning to hover over elements
-    top: '100%', // Position it right at the bottom of the search input
-    left: 0,
-    right: 0,
-    zIndex: 20, // Higher z-index to ensure it appears above other elements
-    elevation: 10, // Increased elevation for Android to create more pronounced shadow
-    width: '100%', // Set to 100% to match parent width exactly
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 }, // Increased shadow offset for more visible drop shadow
-    shadowOpacity: 0.3, // Increased opacity for more visible shadow
-    shadowRadius: 8, // Increased radius for a softer, more spread shadow
-    borderRadius: 10, // Match the noResultsContainer style
-    overflow: 'hidden', // Add overflow hidden to prevent content from spilling out
-  },
+  // Removed searchSuggestionsWrapper as it's no longer needed
   suggestion: {
     padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 0, // Removed border to eliminate bottom border on suggestions
+    // borderBottomColor is set dynamically based on theme
+  },
+  lastSuggestion: {
+    borderBottomWidth: 0,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    paddingBottom: 16,
   },
   suggestionText: {
     fontSize: 16,
-    color: '#333',
   },
   vehiclesContainer: {
     flex: 1,
@@ -1268,24 +1358,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: COLORS.UTILITY.SHADOW,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+    borderWidth: 2,
+    borderColor: COLORS.TEXT.DARK,
   },
   vehicleNumber: {
-    color: '#FFFFFF',
+    color: COLORS.TEXT.DARK,
     fontSize: 24,
     fontWeight: 'bold',
   },
   vehicleType: {
-    color: '#FFFFFF',
+    color: COLORS.TEXT.DARK,
     fontSize: 14,
     marginTop: 4,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalBackdrop: {
@@ -1293,12 +1384,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     minHeight: '50%',
     maxHeight: '80%',
     padding: 20,
+    borderWidth: 1,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1309,7 +1400,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FF6600',
+    color: COLORS.PRIMARY,
   },
   closeButton: {
     padding: 5,
@@ -1323,7 +1414,6 @@ const styles = StyleSheet.create({
   destinationTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 10,
   },
   timesGrid: {
@@ -1344,9 +1434,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    // borderWidth: 1,
+    // borderColor: '#FFFFFF',
   },
   timeText: {
-    color: '#FFFFFF',
+    color: COLORS.TEXT.DARK,
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -1362,20 +1454,21 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 10,
     alignItems: 'center',
+    borderWidth: 1,
   },
   noResultsText: {
     fontSize: 16,
     textAlign: 'center',
   },
   departingTimeBox: {
-    backgroundColor: '#FF3B30', // Red color for departing
+    backgroundColor: COLORS.STATUS.ERROR,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: COLORS.TEXT.DARK,
     padding: 13, // Adjust padding to account for the border
   },
   departingTimeText: {
     fontWeight: 'bold',
     fontSize: 18,
-    color: '#FFFFFF',
+    color: COLORS.TEXT.DARK,
   },
 });

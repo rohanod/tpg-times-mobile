@@ -1,38 +1,23 @@
-(base) ➜  tpg-times-mobile git:(main) ✗ npm run dev
+› Switching to --go
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+█ ▄▄▄▄▄ ██▄▄ ▀█▄██▄▀█▄█ ▄▄▄▄▄ █
+█ █   █ █▀▄  █▀▄▄ ▀ ▀██ █   █ █
+█ █▄▄▄█ █▄▀ █▄ ▀█ ▄▀▄██ █▄▄▄█ █
+█▄▄▄▄▄▄▄█▄▀▄█ █▄█▄█ ▀▄█▄▄▄▄▄▄▄█
+█  ▀▀▀▄▄▄█▄ █▄▄  █▄▄  ███ ▄▀▀██
+█  █▀▀█▄ █▄▀ ▄▄   █▄█▀█ ▀▀█████
+█▄▄▀▀▀ ▄  ▄ █▀ ▄▀ ▀  █  █▀█▀▀ █
+█ ▀█▄█ ▄▀ █▀█▀  ▄█▄██▄▄█▄ █ █▀█
+█  ██▄█▄█ █▄█▄█▄▀▀▀█▀▄ ▀▄▀▀ ▀▀█
+█ ▄▄▀▀ ▄█ ▀ ▀▄▄  ▀██▄█   ████▄█
+█▄█▄█▄▄▄▄ ▀▀▄▀▀█▀▀▄▀▀ ▄▄▄ ▀▄▄▄█
+█ ▄▄▄▄▄ █ ▀▀█▀ ▄  ██▄ █▄█ ▄▄▀▀█
+█ █   █ ██▄ ▄▄▄█▀ ▀█▄ ▄▄▄▄███ █
+█ █▄▄▄█ █▀█▄ ▄██▄▀█ ▄▄▀ █ ▄▀▄▀█
+█▄▄▄▄▄▄▄█▄▄▄▄███▄▄▄████▄█▄▄▄███
 
-> bolt-expo-starter@1.0.0 dev
-> EXPO_NO_TELEMETRY=1 expo start
-
-Starting project at /Users/rohan/tpg-times-mobile
-Starting Metro Bundler
-The following packages should be updated for best compatibility with the installed expo version:
-  expo@52.0.33 - expected version: ~52.0.36
-  expo-constants@17.0.5 - expected version: ~17.0.7
-  expo-font@13.0.3 - expected version: ~13.0.4
-  expo-location@16.5.5 - expected version: ~18.0.7
-  expo-splash-screen@0.29.21 - expected version: ~0.29.22
-  react-native@0.76.6 - expected version: 0.76.7
-  react-native-gesture-handler@2.23.1 - expected version: ~2.20.2
-  react-native-screens@4.6.0 - expected version: ~4.4.0
-  react-native-svg@15.11.1 - expected version: 15.8.0
-  @react-native-async-storage/async-storage@1.21.0 - expected version: 1.23.1
-Your project may not work correctly until you install the expected versions of the packages.
-▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
-█ ▄▄▄▄▄ █ ██▀▀█▀▄▀█ ▄▄▄▄▄ █
-█ █   █ █  ▀█ ▀█▀▄█ █   █ █
-█ █▄▄▄█ █▀  █▄▀▀▄██ █▄▄▄█ █
-█▄▄▄▄▄▄▄█▄█ ▀▄█▄█▄█▄▄▄▄▄▄▄█
-█▄ ▀▀ ▄▄█▀█▄█▄▀▄ ███ ▀▄▄ ▄█
-██ ███▀▄▀▀ ▄█▀██  ▀ █▄  ▀██
-█ ▄▄▀▀█▄▄▀▀▀▄▀█▄▀▄▀▄▀▀▄ ▀██
-███▀█▄█▄▀▄▀  ▄██ ▀ ▀ ▄ ▀███
-█▄▄██▄▄▄█  ▀█▄▀▄▀ ▄▄▄ ▀ ▄▄█
-█ ▄▄▄▄▄ █▀▄██▀█▀▀ █▄█ ▀▀▀▀█
-█ █   █ █▄▄▀▄▀▄ █ ▄ ▄▄▀   █
-█ █▄▄▄█ █▀ █ ▄ ▄▀█▀▄▀█▀▀ ██
-█▄▄▄▄▄▄▄█▄█▄█▄▄████▄▄▄▄▄▄▄█
-
-› Metro waiting on exp://172.20.10.3:8081
+› Choose an app to open your project at http://10.16.237.154:8081/_expo/loading
+› Metro waiting on exp://10.16.237.154:8081
 › Scan the QR code above with Expo Go (Android) or the Camera app (iOS)
 
 › Web is waiting on http://localhost:8081
@@ -52,19 +37,53 @@ Your project may not work correctly until you install the expected versions of t
 
 › Press ? │ show all commands
 
-Logs for your project will appear below. Press Ctrl+C to exit.
-iOS Bundled 1077ms node_modules/expo-router/entry.js (2690 modules)
+› Opening on iOS...
+› The expo-dev-client package is installed, but a development build is not installed on iPhone 16 Pro.
+Launching in Expo Go. If you want to use a development build, you need to create and install one first.
+Learn more
+› Opening exp://10.16.237.154:8081 on iPhone 16 Pro
+› Opening the iOS simulator, this might take a moment.
+› Press ? │ show all commands
+iOS Bundled 2245ms node_modules/expo-router/entry.js (2725 modules)
  (NOBRIDGE) LOG  Bridgeless mode is enabled
  INFO  
  💡 JavaScript logs will be removed from Metro in React Native 0.77! Please use React Native DevTools as your default tool. Tip: Type j in the terminal to open (requires Google Chrome or Microsoft Edge).
- (NOBRIDGE) ERROR  Warning: TypeError: Cannot read property 'search' of undefined
+ (NOBRIDGE) LOG  Current state in index.tsx: {"globalCurrentStop": {"id": "8592791", "name": "Vernier, Bouchet"}, "searchQuery": "", "selectedStop": null, "vehicleNumberFilters": []}
+ (NOBRIDGE) LOG  Current state in index.tsx: {"globalCurrentStop": {"id": "8592791", "name": "Vernier, Bouchet"}, "searchQuery": "b", "selectedStop": null, "vehicleNumberFilters": []}
+ (NOBRIDGE) LOG  Current state in index.tsx: {"globalCurrentStop": {"id": "8592791", "name": "Vernier, Bouchet"}, "searchQuery": "bo", "selectedStop": null, "vehicleNumberFilters": []}
+ (NOBRIDGE) LOG  Current state in index.tsx: {"globalCurrentStop": {"id": "8592791", "name": "Vernier, Bouchet"}, "searchQuery": "bou", "selectedStop": null, "vehicleNumberFilters": []}
+ (NOBRIDGE) LOG  Current state in index.tsx: {"globalCurrentStop": {"id": "8592791", "name": "Vernier, Bouchet"}, "searchQuery": "bouc", "selectedStop": null, "vehicleNumberFilters": []}
+ (NOBRIDGE) LOG  Current state in index.tsx: {"globalCurrentStop": {"id": "8592791", "name": "Vernier, Bouchet"}, "searchQuery": "bouch", "selectedStop": null, "vehicleNumberFilters": []}
+ (NOBRIDGE) LOG  Debounced search triggered for query: bouch
+ (NOBRIDGE) LOG  Searching for stops with query: bouch
+ (NOBRIDGE) LOG  Fetching suggestions from URL: https://transport.opendata.ch/v1/locations?query=bouch&type=station
+ (NOBRIDGE) LOG  API returned stations: 10
+ (NOBRIDGE) LOG  Filtered TPG suggestions: 4 Limited to: 4
+ (NOBRIDGE) LOG  Debounced search found suggestions: 4
+ (NOBRIDGE) LOG  4
+ (NOBRIDGE) LOG  Auto-updating departures for query after 2s: bouch
+ (NOBRIDGE) LOG  Using first suggestion for auto-update: Vernier, Bouchet
+ (NOBRIDGE) LOG  Fetching departures for stop: Vernier, Bouchet
+ (NOBRIDGE) LOG  Fetching from URL: https://search.ch/timetable/api/stationboard.fr.json?stop=Vernier%2C%20Bouchet&limit=300&show_delays=1&transportation_types=tram,bus&mode=depart&time=07:00
+ (NOBRIDGE) LOG  Current state in index.tsx: {"globalCurrentStop": {"id": "8592791", "name": "Vernier, Bouchet"}, "searchQuery": "bouch", "selectedStop": {"id": "8592791", "name": "Vernier, Bouchet"}, "vehicleNumberFilters": []}
+ (NOBRIDGE) LOG  Fetching departures for stop: Vernier, Bouchet
+ (NOBRIDGE) LOG  Fetching from URL: https://search.ch/timetable/api/stationboard.fr.json?stop=Vernier%2C%20Bouchet&limit=300&show_delays=1&transportation_types=tram,bus&mode=depart&time=07:00
+ (NOBRIDGE) LOG  Manually refreshing departures for: Vernier, Bouchet
+ (NOBRIDGE) LOG  Fetching departures for stop: Vernier, Bouchet
+ (NOBRIDGE) LOG  Fetching from URL: https://search.ch/timetable/api/stationboard.fr.json?stop=Vernier%2C%20Bouchet&limit=300&show_delays=1&transportation_types=tram,bus&mode=depart&time=07:00
+ (NOBRIDGE) LOG  Synchronizing to 20-second boundaries. Next refresh at XX:XX:40 (in 3.726 seconds)
+ (NOBRIDGE) LOG  Filtered departures count: 6
+ (NOBRIDGE) LOG  Next refresh scheduled at XX:XX:40 (in 3 seconds)
+ (NOBRIDGE) LOG  Filtered departures count: 6
+ (NOBRIDGE) LOG  Filtered departures count: 6
+ (NOBRIDGE) ERROR  Warning: ReferenceError: Property 'theme' doesn't exist
 
 This error is located at:
-    in FavoritesScreen
-    in Unknown (created by Route(favorites))
-    in Suspense (created by Route(favorites))
-    in Route (created by Route(favorites))
-    in Route(favorites) (created by SceneView)
+    in SettingsScreen
+    in Unknown (created by Route(settings))
+    in Suspense (created by Route(settings))
+    in Route (created by Route(settings))
+    in Route(settings) (created by SceneView)
     in StaticContainer
     in EnsureSingleNavigator (created by SceneView)
     in SceneView (created by BottomTabNavigator)
@@ -153,14 +172,14 @@ This error is located at:
     in View (created by AppContainer)
     in AppContainer
     in main(RootComponent)
- (NOBRIDGE) ERROR  Warning: TypeError: Cannot read property 'search' of undefined
+ (NOBRIDGE) ERROR  Warning: ReferenceError: Property 'theme' doesn't exist
 
 This error is located at:
-    in FavoritesScreen
-    in Unknown (created by Route(favorites))
-    in Suspense (created by Route(favorites))
-    in Route (created by Route(favorites))
-    in Route(favorites) (created by SceneView)
+    in SettingsScreen
+    in Unknown (created by Route(settings))
+    in Suspense (created by Route(settings))
+    in Route (created by Route(settings))
+    in Route(settings) (created by SceneView)
     in StaticContainer
     in EnsureSingleNavigator (created by SceneView)
     in SceneView (created by BottomTabNavigator)
