@@ -35,7 +35,7 @@ export const UI_CONFIG = {
   LANGUAGES: {
     EN: "en",
     FR: "fr"
-  }
+  } as const // Use 'as const' for literal types
 };
 
 export const URL_PARAMS = {

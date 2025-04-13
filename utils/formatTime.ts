@@ -1,4 +1,3 @@
-// Utility function for formatting time
 import { TIME_CONFIG } from '../config';
 
 export const formatTime = (timestamp: string, timeFormat: 'minutes' | 'time') => {
@@ -9,7 +8,6 @@ export const formatTime = (timestamp: string, timeFormat: 'minutes' | 'time') =>
     return diffMinutes;
   }
 
-  // 24-hour time format
   return new Date(timestamp).toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit',

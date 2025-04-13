@@ -1,22 +1,22 @@
-// Centralized theme configuration for the TPG Times Mobile app
+
 
 export const COLORS = {
-  // Primary colors
+  
   PRIMARY: '#FF6600',
   
-  // Background colors
+  
   BACKGROUND: {
     LIGHT: '#FFFFFF',
     DARK: '#000000'
   },
   
-  // Surface colors (for cards, sections, etc.)
+  
   SURFACE: {
     LIGHT: '#F5F5F5',
     DARK: '#1C1C1E'
   },
   
-  // Text colors
+  
   TEXT: {
     LIGHT: '#333333',
     DARK: '#FFFFFF',
@@ -26,7 +26,7 @@ export const COLORS = {
     PLACEHOLDER_DARK: '#666666'
   },
   
-  // Border colors - standardized across the app
+  
   BORDER: {
     LIGHT: '#DDDDDD',
     DARK: '#333333',
@@ -40,7 +40,7 @@ export const COLORS = {
     SUGGESTIONS_DARK: '#333333'
   },
   
-  // Status colors
+  
   STATUS: {
     ERROR: '#FF3B30',
     SUCCESS: '#34C759',
@@ -48,14 +48,14 @@ export const COLORS = {
     INFO: '#007AFF'
   },
   
-  // Tab bar colors
+  
   TAB_BAR: {
     ACTIVE: '#FFFFFF',
     INACTIVE: '#FFEBE0',
     BACKGROUND: '#FF6600'
   },
   
-  // Switch colors
+  
   SWITCH: {
     TRACK_OFF: '#767577',
     TRACK_ON: '#FF6600',
@@ -63,7 +63,7 @@ export const COLORS = {
     THUMB_ANDROID: '#f4f3f4'
   },
   
-  // Utility colors
+  
   UTILITY: {
     SHADOW: '#000000',
     OVERLAY: 'rgba(0, 0, 0, 0.5)',
@@ -72,7 +72,7 @@ export const COLORS = {
   }
 };
 
-// Function to get theme colors based on dark mode
+
 export const getThemeColors = (darkMode: boolean) => {
   return {
     background: darkMode ? COLORS.BACKGROUND.DARK : COLORS.BACKGROUND.LIGHT,
@@ -96,5 +96,5 @@ export const getThemeColors = (darkMode: boolean) => {
   };
 };
 
-// Import Platform for OS-specific switch thumb colors
+
 import { Platform } from 'react-native';
