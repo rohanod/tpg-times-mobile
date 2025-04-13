@@ -34,13 +34,50 @@ interface Stop {
   name: string;
 }
 
+
+// Interface for raw connection data from API
+interface Connection {
+  time: string; 
+  terminal: { name: string };
+  type: 'tram' | 'bus';
+  line: string;
+  color: string; 
+}
+
+// Updated Departure interface
 interface Departure {
   vehicleType: string;
   number: string;
   destination: string;
-  departure: any; // moment object
+  departure: moment.Moment; // Use moment.Moment explicitly
   minutes: number;
   color: string;
+}
+
+// Interface for grouped departures shown in the UI
+interface GroupedDeparture {
+  vehicleType: string;
+  number: string;
+  color: string;
+  destinations: {
+    [destination: string]: Departure[];
+  };
+}
+
+// Type for the map used during departure grouping
+interface GroupedDeparturesMap {
+  [key: string]: GroupedDeparture;
+}
+
+// Type for the map used for sorting based on position
+interface PositionMap {
+  [key: string]: number;
+}
+
+// Type for vehicle position tracking
+interface VehiclePosition {
+  vehicleKey: string;
+  position: number;
 }
 
 export default function StopsScreen() {
@@ -50,20 +87,21 @@ export default function StopsScreen() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [selectedStop, setSelectedStop] = useState<Stop | null>(null);
-  const [departures, setDepartures] = useState<any[]>([]);
+  const [departures, setDepartures] = useState<GroupedDeparture[]>([]);
   const [vehicleNumberInput, setVehicleNumberInput] = useState('');
   const [vehicleNumberFilters, setVehicleNumberFilters] = useState<string[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<GroupedDeparture | null>(null);
   const { language, timeFormat, darkMode } = useSettings();
   const theme = getThemeColors(darkMode);
   // Use the global state for sharing between tabs
-  const { currentStop, setCurrentStop, setVehicleNumberFilters: setGlobalFilters, vehiclePositions, setVehiclePositions } = useCurrentStop();
+  const { currentStop, setCurrentStop, setVehicleNumberFilters: setGlobalFilters, vehiclePositions, setVehiclePositions } = useCurrentStop() as { currentStop: Stop | null; setCurrentStop: (stop: Stop | null) => void; setVehicleNumberFilters: (filters: string[]) => void; vehiclePositions: VehiclePosition[]; setVehiclePositions: (positions: VehiclePosition[]) => void; };
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const router = useRouter();
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const scheduledRefreshRef = useRef<NodeJS.Timeout | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const departureUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [noResultsFound, setNoResultsFound] = useState(false);
   const [nextRefreshTime, setNextRefreshTime] = useState('');
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
@@ -77,7 +115,7 @@ export default function StopsScreen() {
   const { filterSuggestions, checkIfTPG, getFullStopName, findNearestStop } = useArretsCsv();
   
   // Function to get stop suggestions from the Transport API
-  const getStopSuggestions = async (query: string): Promise<any[]> => {
+  const getStopSuggestions = async (query: string): Promise<Stop[]> => { // Return Stop[]
     console.log('Searching for stops with query:', query);
     
     if (!query || query.trim().length < 2) {
@@ -488,51 +526,79 @@ export default function StopsScreen() {
   const handleLocationPress = async () => {
     try {
       setSearchLoading(true);
-      // Use the findNearestStop function from useArretsCsv hook
-      const nearestStop = await findNearestStop();
+      console.log('Location button pressed, requesting nearest stop');
       
-      if (nearestStop && 'name' in nearestStop) {
-        handleStopSelect(nearestStop);
-      } else if (nearestStop && 'error' in nearestStop) {
-        // Handle specific error types with custom messages when available
-        if (nearestStop.error === 'location_timeout') {
-          // Use the custom message if available, otherwise fall back to default message
-          const message = nearestStop.message || 
-            (language === 'en' ? 'Location request timed out. Please try again.' : 'La demande de localisation a expiré. Veuillez réessayer.');
-          console.log('Location timeout handled gracefully');
-          alert(message);
-        } else if (nearestStop.error === 'location_permission_denied') {
-          alert(language === 'en' ? 'Location permission denied. Please enable location services for this app.' : 'Permission de localisation refusée. Veuillez activer les services de localisation pour cette application.');
-        } else if (nearestStop.error === 'no_stops_found') {
-          alert(language === 'en' ? 'No TPG stops found nearby' : 'Aucun arrêt TPG trouvé à proximité');
-        } else {
-          // Use custom message if available
-          const message = nearestStop.message || 
-            (language === 'en' ? 'Error getting location' : 'Erreur de localisation');
-          alert(message);
+      // Attempt to find nearest stop with potential retry
+      let retryCount = 0;
+      const maxRetries = 1; // Set to 1 to allow one retry
+      
+      const attemptLocation = async () => {
+        try {
+          // Use the findNearestStop function from useArretsCsv hook
+          const nearestStop = await findNearestStop();
+          
+          if (nearestStop && 'name' in nearestStop) {
+            console.log('Successfully found nearest stop:', nearestStop.name);
+            handleStopSelect(nearestStop);
+          } else if (nearestStop && 'error' in nearestStop) {
+            // Handle specific error types with custom messages when available
+            if (nearestStop.error === 'location_timeout') {
+              // If we haven't exhausted retries, try again
+              if (retryCount < maxRetries) {
+                retryCount++;
+                console.log(`Retrying location request (attempt ${retryCount} of ${maxRetries})...`);
+                return attemptLocation(); // Recursive retry
+              }
+              
+              // Use the custom message if available, otherwise fall back to default message
+              const message = ('message' in nearestStop && nearestStop.message) || 
+                (language === 'en' ? 'Location request timed out. Please try again in an area with better GPS reception.' : 'La demande de localisation a expiré. Veuillez réessayer dans une zone avec une meilleure réception GPS.');
+              console.log('Location timeout handled gracefully');
+              alert(message);
+            } else if (nearestStop.error === 'location_permission_denied') {
+              alert(language === 'en' ? 'Location permission denied. Please enable location services for this app in your device settings.' : 'Permission de localisation refusée. Veuillez activer les services de localisation pour cette application dans les paramètres de votre appareil.');
+            } else if (nearestStop.error === 'location_services_disabled') {
+              alert(language === 'en' ? 'Location services are disabled. Please enable GPS in your device settings.' : 'Les services de localisation sont désactivés. Veuillez activer le GPS dans les paramètres de votre appareil.');
+            } else if (nearestStop.error === 'no_stops_found') {
+              alert(language === 'en' ? 'No TPG stops found nearby. Please try at a different location.' : 'Aucun arrêt TPG trouvé à proximité. Veuillez essayer à un autre endroit.');
+            } else {
+              // Use custom message if available
+              const message = ('message' in nearestStop && nearestStop.message) || 
+                (language === 'en' ? 'Error getting location' : 'Erreur de localisation');
+              alert(message);
+            }
+          } else {
+            alert(language === 'en' ? 'No TPG stops found nearby' : 'Aucun arrêt TPG trouvé à proximité');
+          }
+        } catch (error) {
+          console.error('Unexpected error in location attempt:', error);
+          throw error; // Pass any unexpected errors to the outer catch block
         }
-      } else {
-        alert(language === 'en' ? 'No TPG stops found nearby' : 'Aucun arrêt TPG trouvé à proximité');
-      }
+      };
+      
+      await attemptLocation();
     } catch (error) {
       console.error('Error getting location:', error);
-      alert(language === 'en' ? 'Error getting location' : 'Erreur de localisation');
+      alert(language === 'en' ? 'Error getting location. Please check your device settings and try again.' : 'Erreur de localisation. Veuillez vérifier les paramètres de votre appareil et réessayer.');
     } finally {
       setSearchLoading(false);
     }
   };
 
-  const handleStopSelect = async (stop) => {
+  const handleStopSelect = async (stop: Stop) => {
     console.log('Selecting stop:', stop.name);
     
     // Set active selection flag to true to prevent auto-search while typing
     setHasActiveSelection(true);
     
-    // Clear previous departures so we can show loading indicator temporarily
+    // Only reset everything if selecting a different stop
     if (selectedStop?.name !== stop.name) {
-      // Only clear departures if selecting a different stop
+      // Clear previous departures to show loading indicator
       setIsInitialFetch(true);
+      setDepartures([]);
+      
       // Reset vehicle positions for the new stop session
+      // This ensures consistent positioning for each new stop session
       setVehiclePositions([]);
     }
     
@@ -571,14 +637,14 @@ export default function StopsScreen() {
 
 
   // Remove a vehicle number from the filters
-  const removeVehicleNumberFilter = (numberToRemove) => {
+  const removeVehicleNumberFilter = (numberToRemove: string) => {
     const newFilters = vehicleNumberFilters.filter(num => num !== numberToRemove);
     setVehicleNumberFilters(newFilters);
     // Update the global state
     setGlobalFilters(newFilters);
   };
 
-  const fetchDepartures = async (stopName, isInitialLoad = false) => {
+  const fetchDepartures = async (stopName: string | undefined, isInitialLoad = false) => {
     console.log('Fetching departures for stop:', stopName);
     
     if (!stopName) {
@@ -609,9 +675,9 @@ export default function StopsScreen() {
 
       if (data && data.connections) {
         const nowMoment = moment().tz('Europe/Zurich');
-        const filteredDepartures = data.connections
-          .filter(conn => conn && conn.time && conn.terminal && conn.terminal.name)
-          .map(conn => {
+        const filteredDepartures: Departure[] = data.connections // Type the array
+          .filter((conn: Connection | null): conn is Connection => !!(conn && conn.time && conn.terminal && conn.terminal.name)) // Type guard
+          .map((conn: Connection) => { // Type conn
             try {
               const departure = moment.tz(conn.time, 'Europe/Zurich');
               const minutesUntilDeparture = Math.ceil(moment.duration(departure.diff(nowMoment)).asMinutes());
@@ -637,12 +703,12 @@ export default function StopsScreen() {
             }
           });
 
-        // Group departures by vehicle type and number, with error handling
-        const groupedDepartures = {};
+        // Group departures by vehicle type and number, with error handling and explicit type
+        const groupedDepartures: GroupedDeparturesMap = {}; // Use GroupedDeparturesMap type
         
-        try {
+        try { // Add types inside the loop
           filteredDepartures.forEach(curr => {
-            if (!curr) return;
+            if (!curr) return; // curr is Departure
             
             const key = `${curr.vehicleType}-${curr.number}`;
             if (!groupedDepartures[key]) {
@@ -665,13 +731,13 @@ export default function StopsScreen() {
         }
 
         // Filter by vehicle numbers if specified - optimized filtering logic
-        let filteredGroupedDepartures = Object.values(groupedDepartures);
+        let filteredGroupedDepartures: GroupedDeparture[] = Object.values(groupedDepartures); // Type the array
         
         if (vehicleNumberFilters.length > 0) {
           // Create a Set for faster lookups
-          const filterSet = new Set(vehicleNumberFilters);
+          const filterSet = new Set<string>(vehicleNumberFilters); // Specify Set type
           
-          filteredGroupedDepartures = filteredGroupedDepartures.filter(vehicle => {
+          filteredGroupedDepartures = filteredGroupedDepartures.filter((vehicle: GroupedDeparture) => { // Type vehicle
             // Convert to string for comparison
             const vehicleNum = String(vehicle.number).trim();
             // Use Set.has() for faster lookups
@@ -683,32 +749,36 @@ export default function StopsScreen() {
         
         // Process the complete data and update the UI with a single state change
         // This ensures we don't show empty states or loading indicators during refresh
-        const departuresArray = Object.values(filteredGroupedDepartures);
+        const departuresArray: GroupedDeparture[] = Object.values(filteredGroupedDepartures); // Type the array
         
         // Update vehicle positions for any new vehicles that weren't in the initial fetch
         if (vehiclePositions.length > 0) {
-          const existingKeys = new Set(vehiclePositions.map(p => p.vehicleKey));
-          const newVehicles = departuresArray.filter(v => !existingKeys.has(`${v.vehicleType}-${v.number}`));
+          const existingKeys = new Set<string>(vehiclePositions.map(p => p.vehicleKey)); // Specify Set type
+          const newVehicles = departuresArray.filter((v: GroupedDeparture) => !existingKeys.has(`${v.vehicleType}-${v.number}`)); // Type v
           
           if (newVehicles.length > 0) {
+            console.log('New vehicles detected in this session:', newVehicles.length);
             // Find the highest position currently used
             const maxPosition = vehiclePositions.reduce((max, p) => Math.max(max, p.position), -1);
             
-            // Add new vehicles with positions after the existing ones
-            const newPositions = [...vehiclePositions];
-            newVehicles.forEach((vehicle, index) => {
+            // Create new positions for all new vehicles, preserving their relative order
+            const newPositions: VehiclePosition[] = [...vehiclePositions]; // Type the array
+            
+            newVehicles.forEach((vehicle: GroupedDeparture, index: number) => { // Type vehicle and index
+              const vehicleKey = `${vehicle.vehicleType}-${vehicle.number}`;
               newPositions.push({
-                vehicleKey: `${vehicle.vehicleType}-${vehicle.number}`,
+                vehicleKey,
                 position: maxPosition + 1 + index
               });
+              console.log(`Added new vehicle ${vehicleKey} at position ${maxPosition + 1 + index}`);
             });
             
-            // Update the stored positions
+            // Update the positions in a single batch to maintain consistency
             setVehiclePositions(newPositions);
           }
         }
         
-        setDepartures(departuresArray);
+        setDepartures(departuresArray); // Set state with GroupedDeparture[]
         
         // Now that we have data, mark initial fetch as complete
         if (isInitialFetch) {
@@ -717,12 +787,12 @@ export default function StopsScreen() {
         
         // If modal is visible and we have a selected vehicle, update it with fresh data
         if (modalVisible && selectedVehicleNumberRef.current) {
-          const updatedVehicleData = filteredGroupedDepartures.find(
-            v => v.number === selectedVehicleNumberRef.current
+          const updatedVehicleData: GroupedDeparture | undefined = filteredGroupedDepartures.find( // Type updatedVehicleData
+            (v: GroupedDeparture) => v.number === selectedVehicleNumberRef.current // Type v
           );
           
           if (updatedVehicleData) {
-            setSelectedVehicle(updatedVehicleData);
+            setSelectedVehicle(updatedVehicleData || null); // Handle undefined case
           }
         }
       }
@@ -735,7 +805,7 @@ export default function StopsScreen() {
     }
   };
 
-  const renderDepartureTime = (departure: any) => {
+  const renderDepartureTime = (departure: Departure) => { // Use Departure type
     // If the departure is happening now (0 minutes), show "Departing"
     if (departure.minutes <= 0) {
       return (
@@ -762,7 +832,7 @@ export default function StopsScreen() {
     }
   };
 
-  const handleVehiclePress = (vehicle: any) => {
+  const handleVehiclePress = (vehicle: GroupedDeparture) => { // Use GroupedDeparture type
     setSelectedVehicle(vehicle);
     selectedVehicleNumberRef.current = vehicle.number;
     setModalVisible(true);
@@ -787,22 +857,12 @@ export default function StopsScreen() {
   };
   
   // Function to maintain consistent positions for vehicle buttons within a stop session
-  const getSortedDepartures = (departuresArray) => {
+  const getSortedDepartures = (departuresArray: GroupedDeparture[]): GroupedDeparture[] => { // Add types
     if (!departuresArray || departuresArray.length === 0) return [];
-    
-    // Create a map of vehicle keys to their current positions
-    const currentVehicleKeys = departuresArray.map(item => `${item.vehicleType}-${item.number}`);
     
     // If we don't have any stored positions yet for this stop session, initialize them
     if (vehiclePositions.length === 0 && departuresArray.length > 0) {
-      // Create initial positions based on the first fetch
-      const initialPositions = departuresArray.map((item, index) => ({
-        vehicleKey: `${item.vehicleType}-${item.number}`,
-        position: index
-      }));
-      
-      // Store these positions for this stop session
-      setVehiclePositions(initialPositions);
+      // Just return the original array - positions will be initialized in the useEffect
       return departuresArray;
     }
     
@@ -812,13 +872,13 @@ export default function StopsScreen() {
       const sortedDepartures = [...departuresArray];
       
       // Create a map of vehicle keys to their positions for faster lookup
-      const positionMap = {};
-      vehiclePositions.forEach(pos => {
+      const positionMap: PositionMap = {}; // Use PositionMap type
+      vehiclePositions.forEach((pos: VehiclePosition) => { // Type pos
         positionMap[pos.vehicleKey] = pos.position;
       });
       
       // Sort the departures based on their stored positions
-      sortedDepartures.sort((a, b) => {
+      sortedDepartures.sort((a: GroupedDeparture, b: GroupedDeparture) => { // Type a and b
         const keyA = `${a.vehicleType}-${a.number}`;
         const keyB = `${b.vehicleType}-${b.number}`;
         
@@ -834,27 +894,6 @@ export default function StopsScreen() {
         // If neither has a position, maintain original order
         return 0;
       });
-      
-      // Check for new vehicles that weren't in the original positions
-      const newVehicles = sortedDepartures.filter(item => {
-        const key = `${item.vehicleType}-${item.number}`;
-        return positionMap[key] === undefined;
-      });
-      
-      // If we have new vehicles, add them to the positions
-      if (newVehicles.length > 0) {
-        // Find the next available position
-        const maxPosition = Math.max(...vehiclePositions.map(p => p.position), -1);
-        
-        // Create new positions for the new vehicles
-        const newPositions = newVehicles.map((item, index) => ({
-          vehicleKey: `${item.vehicleType}-${item.number}`,
-          position: maxPosition + 1 + index
-        }));
-        
-        // Update the positions
-        setVehiclePositions([...vehiclePositions, ...newPositions]);
-      }
       
       return sortedDepartures;
     }
@@ -930,16 +969,32 @@ export default function StopsScreen() {
 
   // Add useEffect to update selectedVehicle when departures change and modal is open
   useEffect(() => {
-    if (modalVisible && selectedVehicleNumberRef.current && departures.length > 0) {
+    if (modalVisible && selectedVehicleNumberRef.current && departures.length > 0) { // departures is now GroupedDeparture[]
       // Find the updated vehicle data in the new departures
-      const updatedVehicleData = departures.find(v => v.number === selectedVehicleNumberRef.current);
+      const updatedVehicleData = departures.find((v: GroupedDeparture) => v.number === selectedVehicleNumberRef.current); // Type v
       
       if (updatedVehicleData) {
         // Update the selectedVehicle with fresh data
-        setSelectedVehicle(updatedVehicleData);
+        setSelectedVehicle(updatedVehicleData || null); // Handle undefined case
       }
     }
   }, [departures, modalVisible]);
+
+  // Effect to update vehiclePositions when departures change and no positions exist yet
+  useEffect(() => {
+    // If we have departures but no positions yet, initialize them
+    if (departures.length > 0 && vehiclePositions.length === 0) { // departures is now GroupedDeparture[]
+      const initialPositions: VehiclePosition[] = departures.map((item: GroupedDeparture, index: number) => ({ // Type item and index
+        vehicleKey: `${item.vehicleType}-${item.number}`,
+        position: index
+      }));
+      
+      // Use setTimeout to ensure this happens after render
+      setTimeout(() => {
+        setVehiclePositions(initialPositions);
+      }, 0);
+    }
+  }, [departures, vehiclePositions.length]);
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -1082,9 +1137,9 @@ export default function StopsScreen() {
           <View style={styles.vehiclesContainer}>
             <FlatList
               data={getSortedDepartures(departures)}
-              keyExtractor={(item) => `${item.vehicleType}-${item.number}`}
+              keyExtractor={(item: GroupedDeparture) => `${item.vehicleType}-${item.number}`} // Type item
               numColumns={3}
-              renderItem={({ item }) => (
+              renderItem={({ item }: { item: GroupedDeparture }) => ( // Type item
                 <TouchableOpacity
                   style={[styles.vehicleButton, { backgroundColor: item.color }]}
                   onPress={() => handleVehiclePress(item)}>
@@ -1142,13 +1197,15 @@ export default function StopsScreen() {
                 </View>
                 
                 <ScrollView style={styles.modalScroll}>
-                  {selectedVehicle && Object.entries(selectedVehicle.destinations).map(([destination, times]) => (
+                  {selectedVehicle && Object.entries(selectedVehicle.destinations).map(([destination, times]) => { // times is unknown here
+                    const departureTimes = times as Departure[]; // Cast times to Departure[]
+                    return ( // Return the JSX element here
                     <View key={destination} style={styles.destinationSection}>
                       <Text style={[styles.destinationTitle, { color: darkMode ? '#FFFFFF' : '#333' }]}>
                         {language === 'en' ? 'To: ' : 'Vers: '}{destination}
                       </Text>
                       <View style={styles.timesGrid}>
-                        {times.slice(0, 4).map((time, index) => {
+                        {departureTimes.slice(0, 4).map((time: Departure, index: number) => { // Use departureTimes
                           // Only check if this is a departing vehicle - strict check for exactly 0 or negative
                           const isDeparting = time.minutes <= 0;
                           
@@ -1192,7 +1249,7 @@ export default function StopsScreen() {
                         })}
                       </View>
                     </View>
-                  ))}
+                  );})}
                 </ScrollView>
               </Animated.View>
             </Pressable>
@@ -1382,6 +1439,7 @@ const styles = StyleSheet.create({
   modalBackdrop: {
     flex: 1,
     justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Add semi-transparent black background for shadow effect
   },
   modalContent: {
     borderTopLeftRadius: 20,

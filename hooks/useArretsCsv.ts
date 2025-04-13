@@ -146,26 +146,125 @@ export const useArretsCsv = () => {
   // Find the nearest TPG stop using arrets.csv
   const findNearestStop = async (): Promise<StopSuggestion | null | LocationError> => {
     try {
-      // Request location permission
+      console.log('Starting location detection process');
+      
+      // Step 1: Request location permission
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
+        console.log('Location permission not granted');
         return { error: 'location_permission_denied' };
       }
       
+      console.log('Location permission granted, checking if location services are enabled');
+      
+      // Step 2: Check if location services are enabled
+      const isLocationServicesEnabled = await Location.hasServicesEnabledAsync();
+      if (!isLocationServicesEnabled) {
+        console.log('Location services not enabled');
+        return { 
+          error: 'location_services_disabled',
+          message: 'Please enable location services in your device settings.' 
+        };
+      }
+      
+      console.log('Location services enabled, attempting to get location');
+      
       try {
-        // Get current location with a 10-second timeout (increased from 5 seconds)
-        const location = await Promise.race([
-          Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced
-          }),
-          new Promise<never>((_, reject) => {
-            setTimeout(() => {
-              console.log('Location request timed out after 10 seconds');
-              reject(new Error('Location request timed out'));
-            }, 10000);
-          })
-        ]);
+        // Step 3: Try to get the last known position first (much faster)
+        let location = null;
+        
+        try {
+          console.log('Attempting to get last known position');
+          const lastKnownPosition = await Location.getLastKnownPositionAsync({
+            maxAge: 60000 // Accept positions from the last minute
+          });
+          
+          if (lastKnownPosition) {
+            console.log('Successfully got last known position');
+            location = lastKnownPosition;
+          } else {
+            console.log('No last known position available');
+          }
+        } catch (lastKnownError) {
+          console.log('Error getting last known position:', lastKnownError);
+        }
+        
+        // Step 4: If no last known position, try to get current position
+        if (!location) {
+          console.log('Getting current position with high accuracy');
+          
+          // First try with high accuracy but shorter timeout
+          try {
+            location = await Promise.race([
+              Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.High,
+              }),
+              new Promise<never>((_, reject) => {
+                setTimeout(() => {
+                  console.log('High accuracy location request timed out after 15 seconds');
+                  reject(new Error('High accuracy location timed out'));
+                }, 15000);
+              })
+            ]);
+            
+            console.log('Successfully got high accuracy location');
+          } catch (highAccuracyError) {
+            console.log('Error getting high accuracy location:', highAccuracyError instanceof Error ? highAccuracyError.message : 'Unknown error');
+            
+            // Fall back to low accuracy with longer timeout
+            try {
+              console.log('Falling back to balanced accuracy');
+              location = await Promise.race([
+                Location.getCurrentPositionAsync({
+                  accuracy: Location.Accuracy.Balanced,
+                }),
+                new Promise<never>((_, reject) => {
+                  setTimeout(() => {
+                    console.log('Balanced accuracy location request timed out after 10 seconds');
+                    reject(new Error('Balanced accuracy location timed out'));
+                  }, 10000);
+                })
+              ]);
+              
+              console.log('Successfully got balanced accuracy location');
+            } catch (balancedAccuracyError) {
+              console.log('Error getting balanced accuracy location:', balancedAccuracyError instanceof Error ? balancedAccuracyError.message : 'Unknown error');
+              
+              // Final attempt with lowest accuracy
+              try {
+                console.log('Falling back to low accuracy');
+                location = await Promise.race([
+                  Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.Lowest,
+                  }),
+                  new Promise<never>((_, reject) => {
+                    setTimeout(() => {
+                      console.log('Low accuracy location request timed out after 10 seconds');
+                      reject(new Error('Low accuracy location timed out'));
+                    }, 10000);
+                  })
+                ]);
+                
+                console.log('Successfully got low accuracy location');
+              } catch (lowAccuracyError) {
+                console.log('All location methods failed');
+                throw new Error('All location methods failed');
+              }
+            }
+          }
+        }
+        
+        // If we still don't have a location after all attempts
+        if (!location) {
+          console.log('Failed to get location after all attempts');
+          return { 
+            error: 'location_unavailable',
+            message: 'Unable to determine your location. Please make sure location services are enabled and you have a GPS signal.'
+          };
+        }
+        
         const { latitude, longitude } = location.coords;
+        console.log(`Got location: ${latitude}, ${longitude}`);
         
         // Make sure we have the arrets data
         if (arretsList.length === 0) {
@@ -183,7 +282,12 @@ export const useArretsCsv = () => {
         
         // Get the nearest stop
         const nearestStop = stopsWithDistances[0];
-        if (!nearestStop) return { error: 'no_stops_found' };
+        if (!nearestStop) {
+          console.log('No stops found nearby');
+          return { error: 'no_stops_found' };
+        }
+        
+        console.log(`Found nearest stop: ${nearestStop.fullName} at ${nearestStop.distance?.toFixed(2)}km`);
         
         // First format as {Municipality}, {stop}
         const formattedName = nearestStop.fullName;
@@ -197,6 +301,7 @@ export const useArretsCsv = () => {
           const data = await response.json();
           
           if (data.stations && data.stations.length > 0) {
+            console.log(`API returned formatted stop: ${data.stations[0].name}`);
             return {
               id: data.stations[0].id,
               name: data.stations[0].name
@@ -208,32 +313,33 @@ export const useArretsCsv = () => {
         }
         
         // Fallback to just returning the nearest stop without an ID
+        console.log(`Using fallback stop: ${formattedName}`);
         return {
           id: `local-${Date.now()}`,
           name: formattedName
         };
       } catch (locationError) {
         // Log the error but with a more user-friendly message
-        console.log('Location service issue:', locationError?.message || 'Unknown error');
+        console.log('Location service issue:', locationError instanceof Error ? locationError.message : 'Unknown error');
         
         // Check if the error is a timeout error
-        if (locationError instanceof Error && locationError.message === 'Location request timed out') {
+        if (locationError instanceof Error && locationError.message.includes('timed out')) {
           return { 
             error: 'location_timeout',
-            message: 'Location services took too long to respond. This might be due to poor GPS signal.'
+            message: 'Location services took too long to respond. Please try moving to an area with better GPS reception.'
           };
         }
         
         return { 
           error: 'location_unavailable',
-          message: 'Unable to determine your location. Please check your device settings.'
+          message: 'Unable to determine your location. Please check your device settings and try again.'
         };
       }
     } catch (err) {
-      console.log('General location service error:', err?.message || 'Unknown error');
+      console.log('General location service error:', err instanceof Error ? err.message : 'Unknown error');
       return { 
         error: 'location_service_error',
-        message: 'There was a problem with location services. Please check your device settings.'
+        message: 'There was a problem with location services. Please check your device settings and ensure your GPS is working properly.'
       };
     }
   };
