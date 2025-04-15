@@ -1,5 +1,7 @@
 
 
+import { Platform } from 'react-native';
+
 export const COLORS = {
   
   PRIMARY: '#FF6600',
@@ -95,6 +97,3 @@ export const getThemeColors = (darkMode: boolean) => {
     loadingIndicator: COLORS.UTILITY.LOADING_INDICATOR
   };
 };
-
-
-import { Platform } from 'react-native';

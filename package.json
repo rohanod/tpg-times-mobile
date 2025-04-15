@@ -54,6 +54,7 @@
     "@react-native-community/cli": "^18.0.0",
     "@xmldom/xmldom": "^0.8.10",
     "babel-plugin-module-resolver": "^5.0.2",
+    "es-abstract": "^1.23.9",
     "eslint": "^8.57.0",
     "eslint-config-expo": "~8.0.1",
     "glob": "^10.3.10",
