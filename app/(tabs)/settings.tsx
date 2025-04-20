@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet, Switch, Platform } from 'react-native';
+import { View, Text, StyleSheet, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '../../hooks/useSettings';
-import { getThemeColors, COLORS } from '../../config/theme';
+import { getThemeColors } from '../../config/theme';
 
 export default function SettingsScreen() {
   const { 

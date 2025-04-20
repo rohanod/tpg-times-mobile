@@ -22,6 +22,7 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+*.log
 
 # macos
 .DS_Store
@@ -36,3 +37,7 @@ yarn-error.*
 # Build Folders
 ios/
 android/
+
+# AI stuff
+.windsurfrules
+expo-llms-full.txt

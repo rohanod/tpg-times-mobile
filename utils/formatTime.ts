@@ -1,4 +1,4 @@
-import { TIME_CONFIG } from '../config';
+
 
 export const formatTime = (timestamp: string, timeFormat: 'minutes' | 'time') => {
   if (timeFormat === 'minutes') {

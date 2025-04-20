@@ -12,21 +12,21 @@ import {
   ScrollView,
   Pressable,
   Animated,
-  KeyboardAvoidingView,
+
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
 import { COLORS, getThemeColors } from '../../config/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, Search, X, Plus, RefreshCw } from 'lucide-react-native';
-import * as Location from 'expo-location';
+import { MapPin, Search, X, Plus } from 'lucide-react-native';
+
 import { useSettings } from '../../hooks/useSettings';
 import { useArretsCsv } from '../../hooks/useArretsCsv';
 import { useCurrentStop } from '../../hooks/useCurrentStop';
 import moment from 'moment-timezone';
 import { formatTime } from '../../utils/formatTime';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { API_ENDPOINTS, TIME_CONFIG, UI_CONFIG } from '../../config';
+import { useLocalSearchParams } from 'expo-router';
+import { API_ENDPOINTS, UI_CONFIG } from '../../config';
 
 
 interface Stop {
@@ -97,13 +97,13 @@ export default function StopsScreen() {
   
   const { currentStop, setCurrentStop, setVehicleNumberFilters: setGlobalFilters, vehiclePositions, setVehiclePositions } = useCurrentStop() as { currentStop: Stop | null; setCurrentStop: (stop: Stop | null) => void; setVehicleNumberFilters: (filters: string[]) => void; vehiclePositions: VehiclePosition[]; setVehiclePositions: (positions: VehiclePosition[]) => void; };
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const router = useRouter();
+
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const scheduledRefreshRef = useRef<NodeJS.Timeout | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const departureUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [noResultsFound, setNoResultsFound] = useState(false);
-  const [nextRefreshTime, setNextRefreshTime] = useState('');
+  const [nextRefreshTime] = useState('');
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
   const [justSelected, setJustSelected] = useState(false);
   const [hasActiveSelection, setHasActiveSelection] = useState(false);
@@ -112,7 +112,7 @@ export default function StopsScreen() {
   
   const [isInitialFetch, setIsInitialFetch] = useState(true);
 
-  const { filterSuggestions, checkIfTPG, getFullStopName, findNearestStop } = useArretsCsv();
+  const { filterSuggestions, findNearestStop } = useArretsCsv();
   
   
   const getStopSuggestions = async (query: string): Promise<Stop[]> => { 

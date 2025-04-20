@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import * as Location from 'expo-location';
 import { API_ENDPOINTS } from '../config';
 
@@ -16,7 +16,6 @@ interface StopSuggestion {
   name: string;
 }
 
-
 interface LocationError {
   error: string;
   message?: string;
@@ -27,13 +26,7 @@ export const useArretsCsv = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  
-  useEffect(() => {
-    fetchArretsCsv();
-  }, []);
-
-  
-  const fetchArretsCsv = async () => {
+  const fetchArretsCsv = useCallback(async () => {
     if (arretsList.length > 0) return;
     
     setLoading(true);
@@ -72,20 +65,18 @@ export const useArretsCsv = () => {
       }).filter(Boolean) as ArretData[];
       
       setArretsList(parsedArrets);
-    } catch (err) {
-      console.error('Error fetching arrets.csv:', err);
+    } catch {
+      console.error('Error fetching arrets.csv:');
       setError('Failed to load stops data');
     } finally {
       setLoading(false);
     }
-  };
+  }, [arretsList]);
 
-  
   const checkIfTPG = async (stopName: string): Promise<boolean> => {
     if (arretsList.length === 0) {
       await fetchArretsCsv();
     }
-    
     
     if (!stopName) return false;
     
@@ -96,12 +87,10 @@ export const useArretsCsv = () => {
     });
   };
 
-  
   const getFullStopName = async (stopName: string): Promise<string> => {
     if (arretsList.length === 0) {
       await fetchArretsCsv();
     }
-    
     
     if (!stopName) return '';
     
@@ -113,24 +102,20 @@ export const useArretsCsv = () => {
     
     const initialName = match ? match.fullName : stopName;
     
-    
     try {
       const locationsResponse = await fetch(`${API_ENDPOINTS.LOCATIONS}?query=${encodeURIComponent(initialName)}&type=station`);
       const locationsData = await locationsResponse.json();
       
       if (locationsData && locationsData.stations && locationsData.stations.length > 0) {
-        
         return locationsData.stations[0].name || initialName;
       }
-    } catch (err) {
-      console.error('Error getting formatted stop name:', err);
+    } catch {
+      console.error('Error getting formatted stop name:');
     }
-    
     
     return initialName;
   };
 
-  
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371; 
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -143,11 +128,9 @@ export const useArretsCsv = () => {
     return R * c;
   };
 
-  
   const findNearestStop = async (): Promise<StopSuggestion | null | LocationError> => {
     try {
       console.log('Starting location detection process');
-      
       
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -156,7 +139,6 @@ export const useArretsCsv = () => {
       }
       
       console.log('Location permission granted, checking if location services are enabled');
-      
       
       const isLocationServicesEnabled = await Location.hasServicesEnabledAsync();
       if (!isLocationServicesEnabled) {
@@ -170,7 +152,6 @@ export const useArretsCsv = () => {
       console.log('Location services enabled, attempting to get location');
       
       try {
-        
         let location = null;
         
         try {
@@ -185,14 +166,12 @@ export const useArretsCsv = () => {
           } else {
             console.log('No last known position available');
           }
-        } catch (lastKnownError) {
-          console.log('Error getting last known position:', lastKnownError);
+        } catch {
+          console.log('Error getting last known position:');
         }
-        
         
         if (!location) {
           console.log('Getting current position with high accuracy');
-          
           
           try {
             location = await Promise.race([
@@ -208,9 +187,8 @@ export const useArretsCsv = () => {
             ]);
             
             console.log('Successfully got high accuracy location');
-          } catch (highAccuracyError) {
-            console.log('Error getting high accuracy location:', highAccuracyError instanceof Error ? highAccuracyError.message : 'Unknown error');
-            
+          } catch {
+            console.log('Error getting high accuracy location:');
             
             try {
               console.log('Falling back to balanced accuracy');
@@ -227,9 +205,8 @@ export const useArretsCsv = () => {
               ]);
               
               console.log('Successfully got balanced accuracy location');
-            } catch (balancedAccuracyError) {
-              console.log('Error getting balanced accuracy location:', balancedAccuracyError instanceof Error ? balancedAccuracyError.message : 'Unknown error');
-              
+            } catch {
+              console.log('Error getting balanced accuracy location:');
               
               try {
                 console.log('Falling back to low accuracy');
@@ -246,17 +223,14 @@ export const useArretsCsv = () => {
                 ]);
                 
                 console.log('Successfully got low accuracy location');
-              } catch (lowAccuracyError) {
-                console.log('All location methods failed');
+              } catch {
                 throw new Error('All location methods failed');
               }
             }
           }
         }
         
-        
         if (!location) {
-          console.log('Failed to get location after all attempts');
           return { 
             error: 'location_unavailable',
             message: 'Unable to determine your location. Please make sure location services are enabled and you have a GPS signal.'
@@ -266,11 +240,9 @@ export const useArretsCsv = () => {
         const { latitude, longitude } = location.coords;
         console.log(`Got location: ${latitude}, ${longitude}`);
         
-        
         if (arretsList.length === 0) {
           await fetchArretsCsv();
         }
-        
         
         const stopsWithDistances = arretsList
           .filter(stop => stop.active)
@@ -280,63 +252,42 @@ export const useArretsCsv = () => {
           }))
           .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
         
-        
         const nearestStop = stopsWithDistances[0];
         if (!nearestStop) {
-          console.log('No stops found nearby');
           return { error: 'no_stops_found' };
         }
         
         console.log(`Found nearest stop: ${nearestStop.fullName} at ${nearestStop.distance?.toFixed(2)}km`);
         
-        
         const formattedName = nearestStop.fullName;
         
-        
         try {
-          
           const response = await fetch(
             `${API_ENDPOINTS.LOCATIONS}?query=${encodeURIComponent(formattedName)}&type=station`
           );
           const data = await response.json();
           
           if (data.stations && data.stations.length > 0) {
-            console.log(`API returned formatted stop: ${data.stations[0].name}`);
             return {
               id: data.stations[0].id,
               name: data.stations[0].name
             };
           }
-        } catch (err) {
-          console.error('Error with locations API:', err);
-          
+        } catch {
+          console.error('Error with locations API:');
         }
         
-        
-        console.log(`Using fallback stop: ${formattedName}`);
         return {
           id: `local-${Date.now()}`,
           name: formattedName
         };
-      } catch (locationError) {
-        
-        console.log('Location service issue:', locationError instanceof Error ? locationError.message : 'Unknown error');
-        
-        
-        if (locationError instanceof Error && locationError.message.includes('timed out')) {
-          return { 
-            error: 'location_timeout',
-            message: 'Location services took too long to respond. Please try moving to an area with better GPS reception.'
-          };
-        }
-        
+      } catch {
         return { 
-          error: 'location_unavailable',
-          message: 'Unable to determine your location. Please check your device settings and try again.'
+          error: 'location_service_error',
+          message: 'There was a problem with location services. Please check your device settings and ensure your GPS is working properly.'
         };
       }
-    } catch (err) {
-      console.log('General location service error:', err instanceof Error ? err.message : 'Unknown error');
+    } catch {
       return { 
         error: 'location_service_error',
         message: 'There was a problem with location services. Please check your device settings and ensure your GPS is working properly.'
@@ -344,7 +295,6 @@ export const useArretsCsv = () => {
     }
   };
 
-  
   const filterSuggestions = async (suggestions: any[]): Promise<StopSuggestion[]> => {
     if (arretsList.length === 0) {
       await fetchArretsCsv();
@@ -353,7 +303,6 @@ export const useArretsCsv = () => {
     const validSuggestions = [];
     
     for (const suggestion of suggestions) {
-      
       if (suggestion && suggestion.name && await checkIfTPG(suggestion.name)) {
         const fullName = await getFullStopName(suggestion.name);
         validSuggestions.push({
