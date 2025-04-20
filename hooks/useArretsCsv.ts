@@ -26,8 +26,8 @@ export const useArretsCsv = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchArretsCsv = useCallback(async () => {
-    if (arretsList.length > 0) return;
+  const fetchArretsCsv = useCallback(async (): Promise<ArretData[]> => {
+    if (arretsList.length > 0) return arretsList;
     
     setLoading(true);
     setError(null);
@@ -65,9 +65,11 @@ export const useArretsCsv = () => {
       }).filter(Boolean) as ArretData[];
       
       setArretsList(parsedArrets);
+      return parsedArrets;
     } catch {
       console.error('Error fetching arrets.csv:');
       setError('Failed to load stops data');
+      return [];
     } finally {
       setLoading(false);
     }
@@ -240,24 +242,25 @@ export const useArretsCsv = () => {
         const { latitude, longitude } = location.coords;
         console.log(`Got location: ${latitude}, ${longitude}`);
         
-        if (arretsList.length === 0) {
-          await fetchArretsCsv();
-        }
+        // Load the latest stops list
+        const list = await fetchArretsCsv();
         
-        const stopsWithDistances = arretsList
+        const stopsWithDistances = list
           .filter(stop => stop.active)
           .map(stop => ({
             ...stop,
             distance: calculateDistance(latitude, longitude, stop.coords[0], stop.coords[1])
           }))
           .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
+        console.log(`Computed distances for ${stopsWithDistances.length} active stops`);
+        console.log(`Nearest TPG stop: "${stopsWithDistances[0].fullName}" (lat: ${stopsWithDistances[0].coords[0]}, lng: ${stopsWithDistances[0].coords[1]}) - ${stopsWithDistances[0].distance?.toFixed(2)} km away`);
         
         const nearestStop = stopsWithDistances[0];
         if (!nearestStop) {
           return { error: 'no_stops_found' };
         }
         
-        console.log(`Found nearest stop: ${nearestStop.fullName} at ${nearestStop.distance?.toFixed(2)}km`);
+        console.log(`Found nearest stop: ${nearestStop.fullName} at ${nearestStop.distance?.toFixed(2)} km`);
         
         const formattedName = nearestStop.fullName;
         

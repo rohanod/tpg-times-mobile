@@ -209,7 +209,6 @@ export default function StopsScreen() {
         clearTimeout(refreshTimeoutRef.current);
         refreshTimeoutRef.current = null;
       }
-      
       if (scheduledRefreshRef.current) {
         clearTimeout(scheduledRefreshRef.current);
         scheduledRefreshRef.current = null;
@@ -538,7 +537,7 @@ export default function StopsScreen() {
           const nearestStop = await findNearestStop();
           
           if (nearestStop && 'name' in nearestStop) {
-            console.log('Successfully found nearest stop:', nearestStop.name);
+            console.log(`Successfully found nearest stop: ${nearestStop.name} (id: ${nearestStop.id})`);
             handleStopSelect(nearestStop);
           } else if (nearestStop && 'error' in nearestStop) {
             
@@ -663,7 +662,7 @@ export default function StopsScreen() {
       const now = new Date();
       const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
       
-      const url = `${API_ENDPOINTS.STATIONBOARD}?stop=${encodeURIComponent(stopName)}&limit=300&show_delays=1&transportation_types=tram,bus&mode=depart&time=${currentTime}`;
+      const url = `${API_ENDPOINTS.STATIONBOARD}?stop=${encodeURIComponent(stopName)}&limit=300&show_delays=1&transportation_types=tram,bus&mode=depart`;
       console.log('Fetching from URL:', url);
       const response = await fetch(url);
       
