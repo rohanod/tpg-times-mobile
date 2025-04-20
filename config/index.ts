@@ -6,7 +6,7 @@ export { COLORS, getThemeColors };
 export const API_ENDPOINTS = {
   LOCATIONS: "https://transport.opendata.ch/v1/locations",
   STATIONBOARD: "https://search.ch/timetable/api/stationboard.fr.json",
-  ARRETS_CSV: "https://raw.githubusercontent.com/rohanod/arrets/refs/heads/main/arrets.csv"
+  ARRETS_CSV: "https://raw.githubusercontent.com/rohanod/arrets/main/arrets.csv"
 };
 
 export const TIME_CONFIG = {
