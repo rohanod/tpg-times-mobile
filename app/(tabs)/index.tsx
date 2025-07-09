@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { COLORS, getThemeColors } from '../../config/theme';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapPin, Search, X, Plus } from 'lucide-react-native';
 
 import { useSettings } from '../../hooks/useSettings';
@@ -26,7 +26,7 @@ import { useCurrentStop } from '../../hooks/useCurrentStop';
 import moment from 'moment-timezone';
 import { formatTime } from '../../utils/formatTime';
 import { useLocalSearchParams } from 'expo-router';
-import { API_ENDPOINTS, UI_CONFIG } from '../../config';
+import { API_ENDPOINTS } from '../../config';
 
 
 interface Stop {
@@ -42,6 +42,7 @@ interface Connection {
   type: 'tram' | 'bus';
   line: string;
   color: string; 
+  delay: number;
 }
 
 
@@ -51,6 +52,7 @@ interface Departure {
   destination: string;
   departure: moment.Moment; 
   minutes: number;
+  delay: number;
   color: string;
 }
 
@@ -81,6 +83,7 @@ interface VehiclePosition {
 }
 
 export default function StopsScreen() {
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -102,11 +105,13 @@ export default function StopsScreen() {
   const scheduledRefreshRef = useRef<NodeJS.Timeout | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const departureUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastVehiclePressTimestampRef = useRef<number>(0);
   const [noResultsFound, setNoResultsFound] = useState(false);
-  const [nextRefreshTime] = useState('');
+  // Remove unused state variables
+  // const [nextRefreshTime, setNextRefreshTime] = useState('');
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
-  const [justSelected, setJustSelected] = useState(false);
-  const [hasActiveSelection, setHasActiveSelection] = useState(false);
+  // Removed unused justSelected and setJustSelected state
+  const [, setHasActiveSelection] = useState(false);
   const [processingFavoriteSelection, setProcessingFavoriteSelection] = useState(false);
   const selectedVehicleNumberRef = useRef<string | null>(null);
   
@@ -115,52 +120,63 @@ export default function StopsScreen() {
   const { filterSuggestions, findNearestStop } = useArretsCsv();
   
   
-  const getStopSuggestions = async (query: string): Promise<Stop[]> => { 
+  // Wrap in useCallback to prevent unnecessary re-renders
+  const getStopSuggestions = useCallback(async (query: string): Promise<Stop[]> => { 
+  if (__DEV__) {
     console.log('Searching for stops with query:', query);
+  }
+  
+  if (!query || query.trim().length < 2) {
+    return [];
+  }
+  
+  try {
+    const url = `${API_ENDPOINTS.LOCATIONS}?query=${encodeURIComponent(query)}&type=station`;
     
-    if (!query || query.trim().length < 2) {
-      return [];
-    }
-    
-    try {
-      
-      const url = `${API_ENDPOINTS.LOCATIONS}?query=${encodeURIComponent(query)}&type=station`;
+    if (__DEV__) {
       console.log('Fetching suggestions from URL:', url);
-      
-      const response = await fetch(url);
-      const data = await response.json();
-      
+    }
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    if (__DEV__) {
       console.log('API returned stations:', data.stations?.length || 0);
-      
-      
-      if (!data.stations || data.stations.length === 0) {
+    }
+    
+    if (!data.stations || data.stations.length === 0) {
+      if (__DEV__) {
         console.log('No suggestions found for query:', query);
-        return [];
       }
-      
-      
-      
-      const filteredSuggestions = await filterSuggestions(data.stations);
-      
-      
-      const limitedSuggestions = filteredSuggestions.slice(0, 4);
-      
-      console.log('Filtered TPG suggestions:', filteredSuggestions.length, 'Limited to:', limitedSuggestions.length);
-      return limitedSuggestions;
-    } catch (error) {
-      console.error('Error fetching stop suggestions:', error);
       return [];
     }
-  };
+    
+    const filteredSuggestions = await filterSuggestions(data.stations);
+    const limitedSuggestions = filteredSuggestions.slice(0, 4);
+    
+    if (__DEV__) {
+      console.log('Filtered TPG suggestions:', filteredSuggestions.length, 'Limited to:', limitedSuggestions.length);
+    }
+    
+    return limitedSuggestions;
+  } catch (error) {
+    if (__DEV__) {
+      console.error('Error fetching stop suggestions:', error);
+    }
+    return [];
+  }
+  }, [filterSuggestions]);
   
   
   useEffect(() => {
-    console.log('Current state in index.tsx:', {
-      selectedStop,
-      vehicleNumberFilters,
-      searchQuery,
-      globalCurrentStop: currentStop
-    });
+    if (__DEV__) {
+      console.log('Current state in index.tsx:', {
+        selectedStop,
+        vehicleNumberFilters,
+        searchQuery,
+        globalCurrentStop: currentStop
+      });
+    }
   }, [selectedStop, vehicleNumberFilters, searchQuery, currentStop]);
 
   
@@ -188,9 +204,7 @@ export default function StopsScreen() {
       const stopNameStr = String(stopName);
       console.log(`Setting stop from params: "${stopNameStr}"`);
       
-      
       const stop = { name: stopNameStr };
-      
       
       setSearchQuery(stopNameStr);
       setSelectedStop(stop);
@@ -261,61 +275,50 @@ export default function StopsScreen() {
       console.error('Error processing parameters:', error);
       setProcessingFavoriteSelection(false);
     }
-  }, [params]);
+  }, [params, fetchDepartures, setCurrentStop, setGlobalFilters, synchronizeToIntervals]);
   
   
   useEffect(() => {
     if (selectedStop) {
       fetchDepartures(selectedStop.name);
     }
-  }, [selectedStop]); 
+  }, [selectedStop, fetchDepartures]); 
 
   
+  // Handle cleanup for all timeout references
   useEffect(() => {
+    // This effect handles cleanup of all timeout references when component unmounts
+    
     return () => {
+      // Clear departureUpdateTimeoutRef
+      if (departureUpdateTimeoutRef.current) {
+        clearTimeout(departureUpdateTimeoutRef.current);
+        departureUpdateTimeoutRef.current = null;
+      }
+      
+      // Clear refreshTimeoutRef
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);
+        refreshTimeoutRef.current = null;
+      }
+      
+      // Clear scheduledRefreshRef
+      if (scheduledRefreshRef.current) {
+        clearTimeout(scheduledRefreshRef.current);
+        scheduledRefreshRef.current = null;
+      }
+      
+      // Clear searchTimeoutRef
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
       }
     };
   }, []);
-
   
-  const synchronizeToIntervals = () => {
-    const now = new Date();
-    const currentSeconds = now.getSeconds();
-    const currentMs = now.getMilliseconds();
-    
-    
-    
-    const nextInterval = Math.ceil(currentSeconds / 20) * 20;
-    const secondsToNextBoundary = nextInterval === currentSeconds ? 20 : nextInterval - currentSeconds;
-    
-    
-    const adjustedDelay = (secondsToNextBoundary * 1000) - currentMs;
-    
-    console.log(`Synchronizing to 20-second boundaries. Next refresh at XX:XX:${nextInterval % 60} (in ${adjustedDelay/1000} seconds)`);
-    
-    
-    refreshTimeoutRef.current = setTimeout(() => {
-      if (selectedStop) {
-        console.log(`Executing refresh at ${new Date().toLocaleTimeString()}`);
-        
-        setIsAutoRefreshing(true);
-        fetchDepartures(selectedStop.name)
-          .then(() => {
-            
-            scheduleNextRefresh();
-          })
-          .finally(() => {
-            setIsAutoRefreshing(false);
-          });
-      }
-    }, adjustedDelay);
-  };
-
   
-  const scheduleNextRefresh = () => {
-    
+  // Define scheduleNextRefresh first
+  const scheduleNextRefresh = useCallback(() => {
     if (processingFavoriteSelection) {
       console.log('Skipping refresh scheduling while processing favorite selection');
       return;
@@ -325,13 +328,10 @@ export default function StopsScreen() {
     const currentSeconds = now.getSeconds();
     const currentMs = now.getMilliseconds();
     
-    
-    
     let targetSeconds;
     if (currentSeconds < 20) targetSeconds = 20;
     else if (currentSeconds < 40) targetSeconds = 40;
     else targetSeconds = 0; 
-    
     
     let delayMs;
     if (targetSeconds === 0) { 
@@ -340,20 +340,16 @@ export default function StopsScreen() {
       delayMs = (targetSeconds - currentSeconds) * 1000 - currentMs;
     }
     
-    
     if (scheduledRefreshRef.current) {
       clearTimeout(scheduledRefreshRef.current);
     }
     
-    
     scheduledRefreshRef.current = setTimeout(() => {
       console.log(`Executing refresh at ${new Date().toLocaleTimeString()}`);
       if (selectedStop) {
-        
         setIsAutoRefreshing(true);
         fetchDepartures(selectedStop.name)
           .then(() => {
-            
             scheduleNextRefresh();
           })
           .finally(() => {
@@ -363,307 +359,62 @@ export default function StopsScreen() {
     }, delayMs);
 
     console.log(`Next refresh scheduled at XX:XX:${targetSeconds} (in ${Math.round(delayMs / 1000)} seconds)`);
-  };
+  }, [processingFavoriteSelection, selectedStop, fetchDepartures]);
 
-  
-  const refresh = async () => {
-    if (!selectedStop) return;
+  // Then define synchronizeToIntervals
+  const synchronizeToIntervals = useCallback(() => {
+    const now = new Date();
+    const currentSeconds = now.getSeconds();
+    const currentMs = now.getMilliseconds();
     
-    console.log('Manually refreshing departures for:', selectedStop.name);
+    const nextInterval = Math.ceil(currentSeconds / 20) * 20;
+    const secondsToNextBoundary = nextInterval === currentSeconds ? 20 : nextInterval - currentSeconds;
     
+    const adjustedDelay = (secondsToNextBoundary * 1000) - currentMs;
     
-    if (departures.length === 0) {
-      setLoading(true);
-    } else {
-      
-      setIsAutoRefreshing(true);
-    }
+    console.log(`Synchronizing to 20-second boundaries. Next refresh at XX:XX:${nextInterval % 60} (in ${adjustedDelay/1000} seconds)`);
     
-    try {
-      await fetchDepartures(selectedStop.name);
-      
-      
-      scheduleNextRefresh();
-    } catch (error) {
-      console.error('Error refreshing departures:', error);
-      alert(language === 'en' ? 'Error refreshing departures' : 'Erreur lors du rafraîchissement des départs');
-    } finally {
-      setLoading(false);
-      setIsAutoRefreshing(false);
-    }
-  };
-
-  const handleSearchInputChange = (text: string) => {
-    setSearchQuery(text);
-    
-    
-    if (!text.trim()) {
-      setHasActiveSelection(false);
-    }
-  };
-  
-  
-  useEffect(() => {
-    
-    if (justSelected) {
-      return;
-    }
-    
-    
-    
-    if (hasActiveSelection && selectedStop) {
-      
-      const cleanQuery = searchQuery.trim().toLowerCase();
-      const cleanSelectedName = selectedStop.name.trim().toLowerCase();
-      
-      
-      
-      if (cleanQuery === cleanSelectedName || 
-          (cleanSelectedName.includes(cleanQuery) && cleanQuery.length > 3)) {
-        return;
+    refreshTimeoutRef.current = setTimeout(() => {
+      if (selectedStop) {
+        console.log(`Executing refresh at ${new Date().toLocaleTimeString()}`);
+        
+        setIsAutoRefreshing(true);
+        fetchDepartures(selectedStop.name)
+          .then(() => {
+            scheduleNextRefresh();
+          })
+          .finally(() => {
+            setIsAutoRefreshing(false);
+          });
       }
-      
-      
-      
-      setHasActiveSelection(false);
-    }
-    
-    
-    if (searchQuery.trim().length > 1) {
-      
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-      
-      
-      searchTimeoutRef.current = setTimeout(async () => {
-        console.log('Debounced search triggered for query:', searchQuery);
-        setSearchLoading(true);
-        try {
-          const results = await getStopSuggestions(searchQuery);
-          console.log('Debounced search found suggestions:', results.length);
-          
-          const limitedResults = results.slice(0, UI_CONFIG.SUGGESTIONS_LIMIT);
-          setSuggestions(limitedResults);
-          setNoResultsFound(results.length === 0);
-        } catch (error) {
-          console.error('Error getting suggestions:', error);
-          setSuggestions([]);
-        } finally {
-          setSearchLoading(false);
-        }
-      }, 400); 
-    } else {
-      
-      setSuggestions([]);
-      setNoResultsFound(false);
-    }
-    
-    
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [searchQuery, justSelected, hasActiveSelection, selectedStop]);
-  
-  const handleSearchSubmit = async () => {
-    
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-      searchTimeoutRef.current = null;
-    }
-    
-    
-    Keyboard.dismiss();
-    setSuggestions([]);
-    setInputFocused(false);
-    
-    
-    if (!searchQuery.trim().length) {
-      return;
-    }
-    
-    
-    if (hasActiveSelection && selectedStop) {
-      return;
-    }
-    
-    
-    
-    
-  };
+    }, adjustedDelay);
+  }, [selectedStop, fetchDepartures, scheduleNextRefresh]);
 
   
-  useEffect(() => {
-    if (selectedStop) {
-      
-      setIsInitialFetch(true);
-      refresh();
+  // Wrap fetchDepartures in useCallback
+  const fetchDepartures = useCallback(async (stopName: string | undefined, isInitialLoad = false) => {
+    if (__DEV__) {
+      console.log('Fetching departures for stop:', stopName);
     }
-  }, [selectedStop, vehicleNumberFilters]);
-
-  
-  useEffect(() => {
-    if (selectedStop) {
-      
-      synchronizeToIntervals();
-    }
-
-    return () => {
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-      }
-      if (scheduledRefreshRef.current) {
-        clearTimeout(scheduledRefreshRef.current);
-      }
-    };
-  }, [selectedStop]);
-
-  
-
-  const handleLocationPress = async () => {
-    try {
-      setSearchLoading(true);
-      console.log('Location button pressed, requesting nearest stop');
-      
-      
-      let retryCount = 0;
-      const maxRetries = 1; 
-      
-      const attemptLocation = async () => {
-        try {
-          
-          const nearestStop = await findNearestStop();
-          
-          if (nearestStop && 'name' in nearestStop) {
-            console.log(`Successfully found nearest stop: ${nearestStop.name} (id: ${nearestStop.id})`);
-            handleStopSelect(nearestStop);
-          } else if (nearestStop && 'error' in nearestStop) {
-            
-            if (nearestStop.error === 'location_timeout') {
-              
-              if (retryCount < maxRetries) {
-                retryCount++;
-                console.log(`Retrying location request (attempt ${retryCount} of ${maxRetries})...`);
-                return attemptLocation(); 
-              }
-              
-              
-              const message = ('message' in nearestStop && nearestStop.message) || 
-                (language === 'en' ? 'Location request timed out. Please try again in an area with better GPS reception.' : 'La demande de localisation a expiré. Veuillez réessayer dans une zone avec une meilleure réception GPS.');
-              console.log('Location timeout handled gracefully');
-              alert(message);
-            } else if (nearestStop.error === 'location_permission_denied') {
-              alert(language === 'en' ? 'Location permission denied. Please enable location services for this app in your device settings.' : 'Permission de localisation refusée. Veuillez activer les services de localisation pour cette application dans les paramètres de votre appareil.');
-            } else if (nearestStop.error === 'location_services_disabled') {
-              alert(language === 'en' ? 'Location services are disabled. Please enable GPS in your device settings.' : 'Les services de localisation sont désactivés. Veuillez activer le GPS dans les paramètres de votre appareil.');
-            } else if (nearestStop.error === 'no_stops_found') {
-              alert(language === 'en' ? 'No TPG stops found nearby. Please try at a different location.' : 'Aucun arrêt TPG trouvé à proximité. Veuillez essayer à un autre endroit.');
-            } else {
-              
-              const message = ('message' in nearestStop && nearestStop.message) || 
-                (language === 'en' ? 'Error getting location' : 'Erreur de localisation');
-              alert(message);
-            }
-          } else {
-            alert(language === 'en' ? 'No TPG stops found nearby' : 'Aucun arrêt TPG trouvé à proximité');
-          }
-        } catch (error) {
-          console.error('Unexpected error in location attempt:', error);
-          throw error; 
-        }
-      };
-      
-      await attemptLocation();
-    } catch (error) {
-      console.error('Error getting location:', error);
-      alert(language === 'en' ? 'Error getting location. Please check your device settings and try again.' : 'Erreur de localisation. Veuillez vérifier les paramètres de votre appareil et réessayer.');
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  const handleStopSelect = async (stop: Stop) => {
-    console.log('Selecting stop:', stop.name);
-    
-    
-    setHasActiveSelection(true);
-    
-    
-    if (selectedStop?.name !== stop.name) {
-      
-      setIsInitialFetch(true);
-      setDepartures([]);
-      
-      
-      
-      setVehiclePositions([]);
-    }
-    
-    
-    setSearchQuery(stop.name);
-    
-    
-    setSuggestions([]);
-    
-    
-    setProcessingFavoriteSelection(false);
-    
-    
-    const stopData = { id: stop.id, name: stop.name };
-    setSelectedStop(stopData);
-    setCurrentStop(stopData);
-    
-    
-    setJustSelected(true);
-    setTimeout(() => setJustSelected(false), 500);
-  };
-
-  
-  const addVehicleNumberFilter = () => {
-    const number = vehicleNumberInput.trim();
-    if (number && !vehicleNumberFilters.includes(number)) {
-      const newFilters = [...vehicleNumberFilters, number];
-      setVehicleNumberFilters(newFilters);
-      setGlobalFilters(newFilters);
-      setVehicleNumberInput('');
-    }
-  };
-  
-  
-  
-
-
-  
-  const removeVehicleNumberFilter = (numberToRemove: string) => {
-    const newFilters = vehicleNumberFilters.filter(num => num !== numberToRemove);
-    setVehicleNumberFilters(newFilters);
-    
-    setGlobalFilters(newFilters);
-  };
-
-  const fetchDepartures = async (stopName: string | undefined, isInitialLoad = false) => {
-    console.log('Fetching departures for stop:', stopName);
     
     if (!stopName) {
-      console.warn('No stop name provided to fetchDepartures');
+      if (__DEV__) {
+        console.warn('No stop name provided to fetchDepartures');
+      }
       return;
     }
-    
-    
     
     if ((isInitialLoad && !isAutoRefreshing) || isInitialFetch) {
       setLoading(true);
     }
     
     try {
-      
-      const now = new Date();
-      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-      
       const url = `${API_ENDPOINTS.STATIONBOARD}?stop=${encodeURIComponent(stopName)}&limit=300&show_delays=1&transportation_types=tram,bus&mode=depart`;
-      console.log('Fetching from URL:', url);
+      
+      if (__DEV__) {
+        console.log('Fetching from URL:', url);
+      }
+      
       const response = await fetch(url);
       
       if (!response.ok) {
@@ -686,6 +437,7 @@ export default function StopsScreen() {
                 destination: conn.terminal.name || '',
                 departure,
                 minutes: minutesUntilDeparture,
+                delay: conn.delay ?? 0,
                 color: conn.color ? `#${conn.color.split('~')[0]}` : '#FF6600'
               };
             } catch (error) {
@@ -697,6 +449,7 @@ export default function StopsScreen() {
                 destination: conn.terminal?.name || 'Unknown',
                 departure: nowMoment,
                 minutes: 0,
+                delay: 0,
                 color: '#FF6600'
               };
             }
@@ -802,7 +555,7 @@ export default function StopsScreen() {
         setLoading(false);
       }
     }
-  };
+  }, [isAutoRefreshing, isInitialFetch, vehicleNumberFilters, vehiclePositions, setVehiclePositions, modalVisible, selectedVehicleNumberRef]);
 
   const renderDepartureTime = (departure: Departure) => { 
     
@@ -831,7 +584,14 @@ export default function StopsScreen() {
     }
   };
 
-  const handleVehiclePress = (vehicle: GroupedDeparture) => { 
+  const handleVehiclePress = (vehicle: GroupedDeparture) => {
+    const now = Date.now();
+    if (now - lastVehiclePressTimestampRef.current > 30000) {
+      lastVehiclePressTimestampRef.current = now;
+      if (selectedStop?.name) {
+        fetchDepartures(selectedStop.name);
+      }
+    }
     setSelectedVehicle(vehicle);
     selectedVehicleNumberRef.current = vehicle.number;
     setModalVisible(true);
@@ -912,7 +672,7 @@ export default function StopsScreen() {
   
   const handleTextInputBlur = () => {
     setInputFocused(false);
-    
+    // Don't clear suggestions immediately to allow for suggestion selection
     setTimeout(() => {
       setSuggestions([]);
     }, 200);
@@ -945,11 +705,218 @@ export default function StopsScreen() {
     }
   };
 
+  const handleSearchInputChange = useCallback((text: string) => {
+    setSearchQuery(text);
+    setHasActiveSelection(false);
+    
+    if (text.trim().length < 2) {
+      setSuggestions([]);
+      setNoResultsFound(false);
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
+      return;
+    }
+    
+    // Clear any existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+    
+    // Use a shorter debounce time for better responsiveness
+    setSearchLoading(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      if (__DEV__) {
+        console.log('Debounced search triggered for query:', text);
+      }
+      try {
+        const results = await getStopSuggestions(text);
+        if (__DEV__) {
+          console.log('Debounced search found suggestions:', results.length);
+        }
+        setSuggestions(results.slice(0, 4));
+        setNoResultsFound(results.length === 0);
+      } catch (error) {
+        console.error('Error getting suggestions:', error);
+        setSuggestions([]);
+        setNoResultsFound(true);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 200); // Reduced from 300ms to 200ms for better responsiveness
+  }, [getStopSuggestions]);
   
+  // Log function that only runs in development mode
+  const devLog = (...args: any[]) => {
+    if (__DEV__) {
+      console.log(...args);
+    }
+  };
+
+  const handleStopSelect = useCallback((stop: Stop) => {
+    if (__DEV__) {
+      console.log('Selected stop:', stop);
+    }
+    
+    // Ensure we have a valid stop name
+    if (!stop || !stop.name) {
+      if (__DEV__) {
+        console.warn('Invalid stop selected');
+      }
+      return;
+    }
+    
+    setSelectedStop(stop);
+    setCurrentStop(stop);
+    setSearchQuery(stop.name); // Set the full name in the search input
+    setSuggestions([]);
+    setInputFocused(false);
+    setHasActiveSelection(true);
+    Keyboard.dismiss();
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+    
+    // Immediately fetch departures when a stop is selected
+    fetchDepartures(stop.name);
+  }, [setCurrentStop, fetchDepartures]);
   
+  const handleSearchSubmit = useCallback(() => {
+    if (__DEV__) {
+      console.log('Search submitted with query:', searchQuery);
+    }
+    
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery.length < 2) return;
+    
+    // Always use the text in the search box directly
+    const stop = { name: trimmedQuery };
+    if (__DEV__) {
+      console.log('Creating stop from query:', stop);
+    }
+    
+    setSelectedStop(stop);
+    setCurrentStop(stop);
+    setHasActiveSelection(true);
+    setInputFocused(false);
+    Keyboard.dismiss();
+    setSuggestions([]);
+    
+    // Immediately fetch departures
+    fetchDepartures(trimmedQuery);
+  }, [searchQuery, setCurrentStop, fetchDepartures]);
 
   
+  
+  const handleLocationPress = useCallback(async () => {
+    if (loading || searchLoading) return;
+    
+    setLoading(true);
+    try {
+      const result = await findNearestStop();
+      
+      if ('error' in result) {
+        if (__DEV__) {
+          console.log('Location error:', result.error);
+        }
+        alert(language === 'en' ? 'Could not detect your location' : 'Impossible de détecter votre position');
+        return;
+      }
+      
+      if (result) {
+        // Call handleStopSelect directly without adding it to dependencies
+        if (__DEV__) {
+          console.log('Selected stop:', result);
+        }
+        setSelectedStop(result);
+        setCurrentStop(result);
+        setSearchQuery(result.name);
+        setSuggestions([]);
+        setInputFocused(false);
+        setHasActiveSelection(true);
+        Keyboard.dismiss();
+        
+        if (searchTimeoutRef.current) {
+          clearTimeout(searchTimeoutRef.current);
+          searchTimeoutRef.current = null;
+        }
+      } else {
+        alert(language === 'en' ? 'No stops found nearby' : 'Aucun arrêt trouvé à proximité');
+      }
+    } catch (error) {
+      if (__DEV__) {
+        console.error('Error finding nearest stop:', error);
+      }
+      alert(language === 'en' ? 'Error detecting location' : 'Erreur lors de la détection de la position');
+    } finally {
+      setLoading(false);
+    }
+  }, [findNearestStop, language, loading, searchLoading, setCurrentStop]);
+  
+  const addVehicleNumberFilter = useCallback(() => {
+    if (!vehicleNumberInput.trim()) return;
+    
+    const newFilter = vehicleNumberInput.trim();
+    if (!vehicleNumberFilters.includes(newFilter)) {
+      const newFilters = [...vehicleNumberFilters, newFilter];
+      setVehicleNumberFilters(newFilters);
+      setGlobalFilters(newFilters);
+    }
+    
+    setVehicleNumberInput('');
+  }, [vehicleNumberInput, vehicleNumberFilters, setGlobalFilters]);
+  
+  const removeVehicleNumberFilter = useCallback((number: string) => {
+    const newFilters = vehicleNumberFilters.filter(n => n !== number);
+    setVehicleNumberFilters(newFilters);
+    setGlobalFilters(newFilters);
+  }, [vehicleNumberFilters, setGlobalFilters]);
+
+  // Wrap refresh in useCallback
+  const refresh = useCallback(async () => {
+    if (!selectedStop) return;
+    
+    if (__DEV__) {
+      console.log('Manually refreshing departures for:', selectedStop.name);
+    }
+    
+    if (departures.length === 0) {
+      setLoading(true);
+    } else {
+      setIsAutoRefreshing(true);
+    }
+    
+    try {
+      await fetchDepartures(selectedStop.name);
+      scheduleNextRefresh();
+    } catch (error) {
+      if (__DEV__) {
+        console.error('Error refreshing departures:', error);
+      }
+      alert(language === 'en' ? 'Error refreshing departures' : 'Erreur lors du rafraîchissement des départs');
+    } finally {
+      setLoading(false);
+      setIsAutoRefreshing(false);
+    }
+  }, [departures.length, fetchDepartures, language, scheduleNextRefresh, selectedStop, setIsAutoRefreshing, setLoading]);
+  
+  // Fix useEffect dependencies
   useEffect(() => {
+    if (selectedStop) {
+      setIsInitialFetch(true);
+      refresh();
+    }
+  }, [selectedStop, vehicleNumberFilters, refresh]);
+  
+  useEffect(() => {
+    if (selectedStop) {
+      synchronizeToIntervals();
+    }
+  
     return () => {
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);
@@ -957,11 +924,40 @@ export default function StopsScreen() {
       if (scheduledRefreshRef.current) {
         clearTimeout(scheduledRefreshRef.current);
       }
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
+    };
+  }, [selectedStop, synchronizeToIntervals]);
+  
+  // Fix cleanup for departureUpdateTimeoutRef
+  useEffect(() => {
+    // Store ref value in a variable inside the effect to avoid the exhaustive deps warning
+    return () => {
+      const timeoutRef = departureUpdateTimeoutRef.current;
+      if (timeoutRef) {
+        clearTimeout(timeoutRef);
       }
-      if (departureUpdateTimeoutRef.current) {
-        clearTimeout(departureUpdateTimeoutRef.current);
+    };
+  }, []);
+  
+  
+  useEffect(() => {
+    return () => {
+      // Store ref values in variables inside the cleanup function to avoid the exhaustive deps warning
+      const refreshTimeout = refreshTimeoutRef.current;
+      const scheduledRefreshTimeout = scheduledRefreshRef.current;
+      const searchTimeout = searchTimeoutRef.current;
+      const departureUpdateTimeout = departureUpdateTimeoutRef.current;
+      
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
+      if (scheduledRefreshTimeout) {
+        clearTimeout(scheduledRefreshTimeout);
+      }
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+      if (departureUpdateTimeout) {
+        clearTimeout(departureUpdateTimeout);
       }
     };
   }, []);
@@ -993,11 +989,11 @@ export default function StopsScreen() {
         setVehiclePositions(initialPositions);
       }, 0);
     }
-  }, [departures, vehiclePositions.length]);
+  }, [departures, vehiclePositions.length, setVehiclePositions]);
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <SafeAreaView style={[styles.container, { backgroundColor: darkMode ? '#000000' : '#FFFFFF' }]}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: darkMode ? '#000000' : '#FFFFFF' }]}>
         <View style={[styles.header, { backgroundColor: darkMode ? '#000000' : '#FFFFFF' }]}>
           <Text style={[styles.title, { color: '#FF6600' }]}>
             {language === 'en' ? 'TPG Bus and Tram' : 'Bus et Tram TPG'}
@@ -1010,25 +1006,27 @@ export default function StopsScreen() {
             <View style={[styles.inputContainer, { 
               backgroundColor: darkMode ? '#1C1C1E' : '#F5F5F5',
               borderRadius: 10,
-              borderBottomLeftRadius: suggestions && suggestions.length > 0 ? 0 : 10,
-              borderBottomRightRadius: suggestions && suggestions.length > 0 ? 0 : 10,
-              borderBottomWidth: suggestions && suggestions.length > 0 ? 0 : 1,
-              borderColor: theme.stopNameBorder
+              borderColor: theme.stopNameBorder,
+              borderWidth: 1,
+              overflow: 'hidden' // Ensure content doesn't overflow rounded corners
             }]}>
               <Search size={20} color="#FF6600" style={styles.searchIcon} />
               <TextInput
-                style={[styles.input, { color: darkMode ? '#FFFFFF' : '#333' }]}
+                style={[styles.input, { 
+                  color: darkMode ? '#FFFFFF' : '#333',
+                  borderRadius: 10 // Match parent container's border radius
+                }]}
                 placeholder={language === 'en' ? 'Enter stop name' : 'Nom de l\'arrêt'}
                 value={searchQuery}
                 onChangeText={handleSearchInputChange}
-                onSubmitEditing={handleSearchSubmit}
+                onSubmitEditing={handleSearchSubmit} // This triggers when Enter/Return is pressed
                 onBlur={handleTextInputBlur}
                 onFocus={handleTextInputFocus}
-                returnKeyType="done"
+                returnKeyType="search" // Change to search for better UX
                 blurOnSubmit={true}
                 placeholderTextColor={darkMode ? '#666666' : '#999'}
                 autoCorrect={false}
-                autoCapitalize="none"
+                autoCapitalize="words" // Auto-capitalize for stop names
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={handleClearSearch} style={styles.clearButton}>
@@ -1135,6 +1133,7 @@ export default function StopsScreen() {
         ) : (
           <View style={styles.vehiclesContainer}>
             <FlatList
+              style={styles.vehiclesList}
               data={getSortedDepartures(departures)}
               keyExtractor={(item: GroupedDeparture) => `${item.vehicleType}-${item.number}`} 
               numColumns={3}
@@ -1146,8 +1145,9 @@ export default function StopsScreen() {
                   <Text style={styles.vehicleType}>{item.vehicleType}</Text>
                 </TouchableOpacity>
               )}
-              contentContainerStyle={styles.vehiclesGrid}
+              contentContainerStyle={[styles.vehiclesGrid, { flexGrow: 1, paddingBottom: insets.bottom + (Platform.OS === 'ios' ? 75 : 65) }]}
               columnWrapperStyle={styles.vehiclesRow}
+              scrollIndicatorInsets={{ bottom: insets.bottom + (Platform.OS === 'ios' ? 75 : 65) }}
             />
           </View>
         )}
@@ -1235,7 +1235,9 @@ export default function StopsScreen() {
                                 <View 
                                   style={[
                                     styles.timeBox,
-                                    { backgroundColor: selectedVehicle.color }
+                                    { 
+                                      backgroundColor: time.delay > 0 ? 'yellow' : selectedVehicle.color
+                                    }
                                   ]}
                                 >
                                   <Text style={styles.timeText}>
@@ -1316,7 +1318,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 10,
     borderWidth: 1,
     borderTopWidth: 0,
-    
+    marginTop: 1,
     overflow: 'hidden',
   },
   filterContainer: {
@@ -1397,10 +1399,12 @@ const styles = StyleSheet.create({
   },
   vehiclesContainer: {
     flex: 1,
-    marginTop: 20,
+    minHeight: 0,
+    flexGrow: 1,
   },
   vehiclesGrid: {
-    padding: 10,
+    padding: 0,
+    flexGrow: 1,
     alignItems: 'center',
   },
   vehiclesRow: {
@@ -1418,8 +1422,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    borderWidth: 2,
-    borderColor: COLORS.TEXT.DARK,
   },
   vehicleNumber: {
     color: COLORS.TEXT.DARK,
@@ -1519,13 +1521,14 @@ const styles = StyleSheet.create({
   },
   departingTimeBox: {
     backgroundColor: COLORS.STATUS.ERROR,
-    borderWidth: 2,
-    borderColor: COLORS.TEXT.DARK,
     padding: 13, 
   },
   departingTimeText: {
     fontWeight: 'bold',
     fontSize: 18,
     color: COLORS.TEXT.DARK,
+  },
+  vehiclesList: {
+    flex: 1,
   },
 });

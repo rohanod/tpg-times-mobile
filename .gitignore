@@ -39,5 +39,9 @@ ios/
 android/
 
 # AI stuff
-.windsurfrules
 expo-llms-full.txt
+
+expo-widgets/
+bottom-sheet-stepper/
+
+Next Steps.md

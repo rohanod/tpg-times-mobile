@@ -52,8 +52,8 @@ export const COLORS = {
   
   
   TAB_BAR: {
-    ACTIVE: '#FFFFFF',
-    INACTIVE: '#FFEBE0',
+    ACTIVE: '#FFEBE0',
+    INACTIVE: '#FFCFAA',
     BACKGROUND: '#FF6600'
   },
   

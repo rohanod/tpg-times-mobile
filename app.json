@@ -21,9 +21,15 @@
       }
     },
     "web": {
-      "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "TPG Times",
+      "shortName": "TPG Times",
+      "startUrl": ".",
+      "scope": "/",
+      "themeColor": "#FF6600",
+      "backgroundColor": "#ffffff",
+      "crossorigin": "use-credentials"
     },
     "plugins": [
       "expo-updates",
@@ -31,7 +37,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "${PRODUCT_NAME} needs to access your location to show you nearby stops"  
+          "locationWhenInUsePermission": "${PRODUCT_NAME} needs to access your location to show you nearby stops"
         }
       ]
     ],
@@ -50,7 +56,6 @@
       "package": "com.rohanodwyer.tpgtimes",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#FFFFFF",
         "monochromeImage": "./assets/images/icon.png"
       }
     },
