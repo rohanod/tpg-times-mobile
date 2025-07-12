@@ -12,6 +12,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Dimensions,
+  TouchableWithoutFeedback,
+  InputAccessoryView,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapPin, Search, X, Plus, RefreshCw } from 'lucide-react-native';
@@ -40,12 +42,12 @@ export default function StopsScreen() {
   const [vehicleNumberFilters, setVehicleNumberFilters] = useState<string[]>([]);
   const [locationLoading, setLocationLoading] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [searchBoxLayout, setSearchBoxLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
   // Refs
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const departureService = useRef(DepartureService.getInstance());
   const locationService = useRef(LocationService.getInstance());
+  const inputAccessoryViewID = 'vehicleNumberInputAccessory';
 
   // Hooks
   const { currentStop, setCurrentStop } = useCurrentStop();
@@ -159,7 +161,9 @@ export default function StopsScreen() {
 
   // Vehicle filter management
   const addVehicleNumberFilter = useCallback(() => {
-    if (!vehicleNumberInput.trim()) return;
+    if (!vehicleNumberInput.trim()) {
+      return;
+    }
     
     const newFilter = vehicleNumberInput.trim();
     if (!vehicleNumberFilters.includes(newFilter)) {
@@ -310,165 +314,164 @@ export default function StopsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
-        <Text style={[styles.title, { color: theme.text }]}>
-          {language === 'en' ? 'TPG Times' : 'Horaires TPG'}
-        </Text>
-      </View>
+        <View style={{ flex: 1 }}>
+          {/* Header */}
+          <View style={[styles.header, { paddingTop: insets.top }]}>
+            <Text style={[styles.title, { color: theme.text }]}>
+              {language === 'en' ? 'TPG Times' : 'Horaires TPG'}
+            </Text>
+          </View>
 
-      {/* Search Section */}
-      <View style={styles.searchSection}>
-        <View 
-          style={[
-            styles.searchContainer, 
-            { 
-              borderColor: theme.border,
-              borderBottomLeftRadius: inputFocused && suggestions.length > 0 ? 0 : 12,
-              borderBottomRightRadius: inputFocused && suggestions.length > 0 ? 0 : 12,
-            }
-          ]}
-          onLayout={(event) => {
-            const { x, y, width, height } = event.nativeEvent.layout;
-            // Calculate absolute position: header height + safe area + search section position
-            const absoluteY = insets.top + 50 + y + 10; // header ~50px + section padding 10px
-            setSearchBoxLayout({ x: x + 20, y: absoluteY, width, height });
-          }}
-        >
-          <Search size={20} color={theme.textSecondary} />
-          <TextInput
-            style={[styles.searchInput, { color: theme.text }]}
-            placeholder={language === 'en' ? 'Search for a stop...' : 'Rechercher un arrêt...'}
-            placeholderTextColor={theme.textSecondary}
-            value={searchQuery}
-            onChangeText={onSearchChange}
-            onFocus={() => setInputFocused(true)}
-            onBlur={() => setInputFocused(false)}
-          />
-          {searchLoading && <ActivityIndicator size="small" color={theme.primary} />}
-        </View>
+          {/* Search Section */}
+          <View style={styles.searchSection}>
+            <View style={styles.searchWrapper}>
+              <View 
+                style={[
+                  styles.searchContainer, 
+                  { 
+                    borderColor: theme.border,
+                    borderBottomLeftRadius: inputFocused && suggestions.length > 0 ? 0 : 12,
+                    borderBottomRightRadius: inputFocused && suggestions.length > 0 ? 0 : 12,
+                  }
+                ]}
+              >
+                <Search size={20} color={theme.textSecondary} />
+                <TextInput
+                  style={[styles.searchInput, { color: theme.text }]}
+                  placeholder={language === 'en' ? 'Search for a stop...' : 'Rechercher un arrêt...'}
+                  placeholderTextColor={theme.textSecondary}
+                  value={searchQuery}
+                  onChangeText={onSearchChange}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
+                />
+                {searchLoading && <ActivityIndicator size="small" color={theme.primary} />}
+              </View>
 
-        <TouchableOpacity
-          style={[styles.locationButton, { backgroundColor: theme.primary }]}
-          onPress={findNearestStopLocation}
-          disabled={locationLoading}
-        >
-          {locationLoading ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
-            <MapPin size={20} color="white" />
-          )}
-        </TouchableOpacity>
-      </View>
+              {/* Suggestions - Connected to Search Box */}
+              {inputFocused && suggestions.length > 0 && (
+                <View 
+                  style={[
+                    styles.suggestionsContainer, 
+                    { 
+                      backgroundColor: theme.surface,
+                      borderColor: theme.border,
+                      maxHeight: Math.min(300, (insets.bottom + keyboardHeight > 0 ? 
+                        (Dimensions.get('window').height - 250 - keyboardHeight) : 
+                        300)),
+                    }
+                  ]}
+                >
+                  <FlatList
+                    data={suggestions}
+                    renderItem={renderSuggestion}
+                    keyExtractor={(item, index) => `${item.id || item.name}-${index}`}
+                    style={styles.suggestionsList}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                    bounces={false}
+                  />
+                </View>
+              )}
+            </View>
 
-      {/* Suggestions - Connected to Search Box */}
-      {inputFocused && suggestions.length > 0 && (
-        <View 
-          style={[
-            styles.suggestionsContainer, 
-            { 
-              backgroundColor: theme.surface,
-              borderColor: theme.border,
-              top: searchBoxLayout.y + searchBoxLayout.height - 1, // -1px to connect seamlessly
-              left: searchBoxLayout.x,
-              width: searchBoxLayout.width,
-              maxHeight: Math.min(300, (insets.bottom + keyboardHeight > 0 ? 
-                (Dimensions.get('window').height - searchBoxLayout.y - searchBoxLayout.height - keyboardHeight - 100) : 
-                300)),
-            }
-          ]}
-        >
-          <FlatList
-            data={suggestions}
-            renderItem={renderSuggestion}
-            keyExtractor={(item, index) => `${item.id || item.name}-${index}`}
-            style={styles.suggestionsList}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          />
-        </View>
-      )}
-
-      {/* Vehicle Filters */}
-      {!inputFocused && (
-        <View style={styles.filtersSection}>
-          <View style={[styles.filterInputContainer, { borderColor: theme.border }]}>
-            <TextInput
-              style={[styles.filterInput, { color: theme.text }]}
-              placeholder={language === 'en' ? 'Filter by vehicle number...' : 'Filtrer par numéro...'}
-              placeholderTextColor={theme.textSecondary}
-              value={vehicleNumberInput}
-              onChangeText={setVehicleNumberInput}
-              onSubmitEditing={addVehicleNumberFilter}
-            />
             <TouchableOpacity
-              style={[styles.addFilterButton, { backgroundColor: theme.primary }]}
-              onPress={addVehicleNumberFilter}
+              style={[styles.locationButton, { backgroundColor: theme.primary }]}
+              onPress={findNearestStopLocation}
+              disabled={locationLoading}
             >
-              <Plus size={16} color="white" />
+              {locationLoading ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <MapPin size={20} color="white" />
+              )}
             </TouchableOpacity>
           </View>
 
-          {vehicleNumberFilters.length > 0 && (
-            <FlatList
-              data={vehicleNumberFilters}
-              renderItem={renderVehicleFilter}
-              keyExtractor={(item) => item}
-              horizontal
-              style={styles.filtersRow}
-              showsHorizontalScrollIndicator={false}
-            />
-          )}
-        </View>
-      )}
+          {/* Vehicle Filters */}
+          {!inputFocused && (
+            <View style={styles.filtersSection}>
+              <View style={[styles.filterInputContainer, { borderColor: theme.border }]}>
+                <TextInput
+                  style={[styles.filterInput, { color: theme.text }]}
+                  placeholder={language === 'en' ? 'Filter by vehicle number...' : 'Filtrer par numéro...'}
+                  placeholderTextColor={theme.textSecondary}
+                  value={vehicleNumberInput}
+                  onChangeText={setVehicleNumberInput}
+                  onSubmitEditing={addVehicleNumberFilter}
+                  returnKeyType="done"
+                  keyboardType="number-pad"
+                />
+                <TouchableOpacity
+                  style={[styles.addFilterButton, { backgroundColor: theme.primary }]}
+                  onPress={addVehicleNumberFilter}
+                >
+                  <Plus size={16} color="white" />
+                </TouchableOpacity>
+              </View>
 
-      {/* Departures Section */}
-      {!inputFocused && selectedStop && (
-        <View style={[styles.departuresSection, { 
-          backgroundColor: darkMode ? 'rgba(28, 28, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-          shadowColor: darkMode ? '#000' : '#000',
-        }]}>
-          {departuresError && (
-            <View style={[styles.errorContainer, { backgroundColor: theme.surface }]}>
-              <Text style={[styles.errorText, { color: '#FF3B30' }]}>
-                {departuresError}
-              </Text>
+              {vehicleNumberFilters.length > 0 && (
+                <FlatList
+                  data={vehicleNumberFilters}
+                  renderItem={renderVehicleFilter}
+                  keyExtractor={(item) => item}
+                  horizontal
+                  style={styles.filtersRow}
+                  showsHorizontalScrollIndicator={false}
+                />
+              )}
             </View>
           )}
 
-          {departuresLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={theme.primary} />
-              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
-                {language === 'en' ? 'Loading departures...' : 'Chargement des départs...'}
-              </Text>
-            </View>
-          ) : (
-            <FlatList
-              data={departures}
-              renderItem={renderDeparture}
-              keyExtractor={(item) => `${item.vehicleType}-${item.number}`}
-              style={styles.departuresList}
-              showsVerticalScrollIndicator={false}
-              refreshing={refreshing}
-              onRefresh={handleManualRefresh}
-              ListHeaderComponent={<View style={{ height: 16 }} />}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                    {language === 'en' 
-                      ? 'No departures found' 
-                      : 'Aucun départ trouvé'
-                    }
+          {/* Departures Section */}
+          {!inputFocused && selectedStop && (
+            <View style={[styles.departuresSection, { 
+              backgroundColor: darkMode ? 'rgba(28, 28, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+              shadowColor: darkMode ? '#000' : '#000',
+            }]}>
+              {departuresError && (
+                <View style={[styles.errorContainer, { backgroundColor: theme.surface }]}>
+                  <Text style={[styles.errorText, { color: '#FF3B30' }]}>
+                    {departuresError}
                   </Text>
                 </View>
-              }
-            />
+              )}
+
+              {departuresLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={theme.primary} />
+                  <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+                    {language === 'en' ? 'Loading departures...' : 'Chargement des départs...'}
+                  </Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={departures}
+                  renderItem={renderDeparture}
+                  keyExtractor={(item) => `${item.vehicleType}-${item.number}`}
+                  style={styles.departuresList}
+                  showsVerticalScrollIndicator={false}
+                  refreshing={refreshing}
+                  onRefresh={handleManualRefresh}
+                  keyboardDismissMode="on-drag"
+                  ListHeaderComponent={<View style={{ height: 16 }} />}
+                  ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                      <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                        {language === 'en' 
+                          ? 'No departures found' 
+                          : 'Aucun départ trouvé'
+                        }
+                      </Text>
+                    </View>
+                  }
+                />
+              )}
+            </View>
           )}
         </View>
-      )}
-
     </SafeAreaView>
   );
 }
@@ -492,8 +495,10 @@ const styles = StyleSheet.create({
     gap: 10,
     zIndex: 1001, // Ensure search section is above suggestions
   },
-  searchContainer: {
+  searchWrapper: {
     flex: 1,
+  },
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
@@ -515,6 +520,9 @@ const styles = StyleSheet.create({
   },
   suggestionsContainer: {
     position: 'absolute',
+    top: 40,
+    left: 0,
+    right: 0,
     zIndex: 1000,
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
@@ -528,6 +536,7 @@ const styles = StyleSheet.create({
     maxHeight: 300,
     borderWidth: 1,
     borderTopWidth: 0,
+    transform: [{ translateY: -1 }],
   },
   suggestionsList: {
     flexGrow: 0,
@@ -700,5 +709,18 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  accessoryView: {
+    padding: 10,
+    alignItems: 'flex-end',
+    borderTopWidth: 1,
+  },
+  accessoryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  accessoryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
