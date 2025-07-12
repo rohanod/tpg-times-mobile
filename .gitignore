@@ -1,5 +1,7 @@
 # dependencies
 node_modules/
+pnpm-lock.json
+package-lock.json
 
 # expo
 .expo/
@@ -43,5 +45,3 @@ expo-llms-full.txt
 
 expo-widgets/
 bottom-sheet-stepper/
-
-Next Steps.md

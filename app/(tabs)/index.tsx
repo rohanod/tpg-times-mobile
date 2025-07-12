@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,857 +6,158 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
-  Platform,
   ActivityIndicator,
-  Modal,
-  ScrollView,
-  Pressable,
-  Animated,
-
   Keyboard,
-  TouchableWithoutFeedback,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
 } from 'react-native';
-import { COLORS, getThemeColors } from '../../config/theme';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MapPin, Search, X, Plus } from 'lucide-react-native';
+import { MapPin, Search, X, Plus, RefreshCw } from 'lucide-react-native';
 
 import { useSettings } from '../../hooks/useSettings';
 import { useArretsCsv } from '../../hooks/useArretsCsv';
 import { useCurrentStop } from '../../hooks/useCurrentStop';
-import moment from 'moment-timezone';
+import { useDepartureService } from '../../hooks/useDepartureService';
 import { formatTime } from '../../utils/formatTime';
-import { useLocalSearchParams } from 'expo-router';
-import { API_ENDPOINTS } from '../../config';
-
-
-interface Stop {
-  id?: string;
-  name: string;
-}
-
-
-
-interface Connection {
-  time: string; 
-  terminal: { name: string };
-  type: 'tram' | 'bus';
-  line: string;
-  color: string; 
-  delay: number;
-}
-
-
-interface Departure {
-  vehicleType: string;
-  number: string;
-  destination: string;
-  departure: moment.Moment; 
-  minutes: number;
-  delay: number;
-  color: string;
-}
-
-
-interface GroupedDeparture {
-  vehicleType: string;
-  number: string;
-  color: string;
-  destinations: {
-    [destination: string]: Departure[];
-  };
-}
-
-
-interface GroupedDeparturesMap {
-  [key: string]: GroupedDeparture;
-}
-
-
-interface PositionMap {
-  [key: string]: number;
-}
-
-
-interface VehiclePosition {
-  vehicleKey: string;
-  position: number;
-}
+import { getThemeColors } from '../../config/theme';
+import DepartureService, { type Stop, type GroupedDeparture } from '../../services/DepartureService';
+import LocationService from '../../services/LocationService';
 
 export default function StopsScreen() {
   const insets = useSafeAreaInsets();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [inputFocused, setInputFocused] = useState(false);
-  const [selectedStop, setSelectedStop] = useState<Stop | null>(null);
-  const [departures, setDepartures] = useState<GroupedDeparture[]>([]);
-  const [vehicleNumberInput, setVehicleNumberInput] = useState('');
-  const [vehicleNumberFilters, setVehicleNumberFilters] = useState<string[]>([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState<GroupedDeparture | null>(null);
   const { language, timeFormat, darkMode } = useSettings();
   const theme = getThemeColors(darkMode);
   
-  const { currentStop, setCurrentStop, setVehicleNumberFilters: setGlobalFilters, vehiclePositions, setVehiclePositions } = useCurrentStop() as { currentStop: Stop | null; setCurrentStop: (stop: Stop | null) => void; setVehicleNumberFilters: (filters: string[]) => void; vehiclePositions: VehiclePosition[]; setVehiclePositions: (positions: VehiclePosition[]) => void; };
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  // State management
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<Stop[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [selectedStop, setSelectedStop] = useState<Stop | null>(null);
+  const [vehicleNumberInput, setVehicleNumberInput] = useState('');
+  const [vehicleNumberFilters, setVehicleNumberFilters] = useState<string[]>([]);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [searchBoxLayout, setSearchBoxLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
-  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const scheduledRefreshRef = useRef<NodeJS.Timeout | null>(null);
+  // Refs
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const departureUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastVehiclePressTimestampRef = useRef<number>(0);
-  const [noResultsFound, setNoResultsFound] = useState(false);
-  // Remove unused state variables
-  // const [nextRefreshTime, setNextRefreshTime] = useState('');
-  const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
-  // Removed unused justSelected and setJustSelected state
-  const [, setHasActiveSelection] = useState(false);
-  const [processingFavoriteSelection, setProcessingFavoriteSelection] = useState(false);
-  const selectedVehicleNumberRef = useRef<string | null>(null);
-  
-  const [isInitialFetch, setIsInitialFetch] = useState(true);
+  const departureService = useRef(DepartureService.getInstance());
+  const locationService = useRef(LocationService.getInstance());
 
+  // Hooks
+  const { currentStop, setCurrentStop } = useCurrentStop();
   const { filterSuggestions, findNearestStop } = useArretsCsv();
-  
-  
-  // Wrap in useCallback to prevent unnecessary re-renders
-  const getStopSuggestions = useCallback(async (query: string): Promise<Stop[]> => { 
-  if (__DEV__) {
-    console.log('Searching for stops with query:', query);
-  }
-  
-  if (!query || query.trim().length < 2) {
-    return [];
-  }
-  
-  try {
-    const url = `${API_ENDPOINTS.LOCATIONS}?query=${encodeURIComponent(query)}&type=station`;
-    
-    if (__DEV__) {
-      console.log('Fetching suggestions from URL:', url);
-    }
-    
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    if (__DEV__) {
-      console.log('API returned stations:', data.stations?.length || 0);
-    }
-    
-    if (!data.stations || data.stations.length === 0) {
-      if (__DEV__) {
-        console.log('No suggestions found for query:', query);
-      }
-      return [];
-    }
-    
-    const filteredSuggestions = await filterSuggestions(data.stations);
-    const limitedSuggestions = filteredSuggestions.slice(0, 4);
-    
-    if (__DEV__) {
-      console.log('Filtered TPG suggestions:', filteredSuggestions.length, 'Limited to:', limitedSuggestions.length);
-    }
-    
-    return limitedSuggestions;
-  } catch (error) {
-    if (__DEV__) {
-      console.error('Error fetching stop suggestions:', error);
-    }
-    return [];
-  }
-  }, [filterSuggestions]);
-  
-  
-  useEffect(() => {
-    if (__DEV__) {
-      console.log('Current state in index.tsx:', {
-        selectedStop,
-        vehicleNumberFilters,
-        searchQuery,
-        globalCurrentStop: currentStop
-      });
-    }
-  }, [selectedStop, vehicleNumberFilters, searchQuery, currentStop]);
+  const {
+    departures,
+    loading: departuresLoading,
+    error: departuresError,
+    refreshing,
+    fetchDepartures,
+    startAutoRefresh,
+    stopAutoRefresh,
+    manualRefresh,
+  } = useDepartureService();
 
-  
-  const params = useLocalSearchParams();
-  
-  
-  useEffect(() => {
-    if (!params || Object.keys(params).length === 0) return;
-    
-    console.log('Processing URL params:', params);
-    
-    try {
-      
-      const stopName = params.stop;
-      
-      if (!stopName) {
-        console.log('No stop parameter found in URL params');
-        return;
-      }
-      
-      
-      setProcessingFavoriteSelection(true);
-      
-      
-      const stopNameStr = String(stopName);
-      console.log(`Setting stop from params: "${stopNameStr}"`);
-      
-      const stop = { name: stopNameStr };
-      
-      setSearchQuery(stopNameStr);
-      setSelectedStop(stop);
-      setCurrentStop(stop);
-      setHasActiveSelection(true);
-      
-      
+  // Search functionality
+  const handleSearch = useCallback(async (query: string) => {
+    if (!query || query.trim().length < 2) {
       setSuggestions([]);
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-        searchTimeoutRef.current = null;
-      }
-      
-      
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-        refreshTimeoutRef.current = null;
-      }
-      if (scheduledRefreshRef.current) {
-        clearTimeout(scheduledRefreshRef.current);
-        scheduledRefreshRef.current = null;
-      }
-      
-      
-      try {
-        if (params.numbers) {
-          const numbersStr = String(params.numbers);
-          
-          if (numbersStr.trim() === '') {
-            setVehicleNumberFilters([]);
-            setGlobalFilters([]);
-          } else {
-            const filtersArray = numbersStr.split(',').filter(n => n.trim() !== '');
-            console.log('Setting filters from params:', filtersArray);
-            setVehicleNumberFilters(filtersArray);
-            setGlobalFilters(filtersArray);
-          }
-        } else {
-          
-          setVehicleNumberFilters([]);
-          setGlobalFilters([]);
-        }
-      } catch (filterError) {
-        console.error('Error processing vehicle number filters:', filterError);
-        setVehicleNumberFilters([]);
-        setGlobalFilters([]);
-      }
-      
-      
-      setTimeout(() => {
-        if (stopNameStr) {
-          fetchDepartures(stopNameStr)
-            .then(() => {
-              
-              synchronizeToIntervals();
-              
-              setTimeout(() => {
-                setProcessingFavoriteSelection(false);
-              }, 500);
-            })
-            .catch(err => {
-              console.error('Error fetching departures after param processing:', err);
-              setProcessingFavoriteSelection(false);
-            });
-        }
-      }, 300);
-    } catch (error) {
-      console.error('Error processing parameters:', error);
-      setProcessingFavoriteSelection(false);
-    }
-  }, [params, fetchDepartures, setCurrentStop, setGlobalFilters, synchronizeToIntervals]);
-  
-  
-  useEffect(() => {
-    if (selectedStop) {
-      fetchDepartures(selectedStop.name);
-    }
-  }, [selectedStop, fetchDepartures]); 
-
-  
-  // Handle cleanup for all timeout references
-  useEffect(() => {
-    // This effect handles cleanup of all timeout references when component unmounts
-    
-    return () => {
-      // Clear departureUpdateTimeoutRef
-      if (departureUpdateTimeoutRef.current) {
-        clearTimeout(departureUpdateTimeoutRef.current);
-        departureUpdateTimeoutRef.current = null;
-      }
-      
-      // Clear refreshTimeoutRef
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-        refreshTimeoutRef.current = null;
-      }
-      
-      // Clear scheduledRefreshRef
-      if (scheduledRefreshRef.current) {
-        clearTimeout(scheduledRefreshRef.current);
-        scheduledRefreshRef.current = null;
-      }
-      
-      // Clear searchTimeoutRef
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-        searchTimeoutRef.current = null;
-      }
-    };
-  }, []);
-  
-  
-  // Define scheduleNextRefresh first
-  const scheduleNextRefresh = useCallback(() => {
-    if (processingFavoriteSelection) {
-      console.log('Skipping refresh scheduling while processing favorite selection');
       return;
     }
-    
-    const now = new Date();
-    const currentSeconds = now.getSeconds();
-    const currentMs = now.getMilliseconds();
-    
-    let targetSeconds;
-    if (currentSeconds < 20) targetSeconds = 20;
-    else if (currentSeconds < 40) targetSeconds = 40;
-    else targetSeconds = 0; 
-    
-    let delayMs;
-    if (targetSeconds === 0) { 
-      delayMs = (60 - currentSeconds) * 1000 - currentMs;
-    } else {
-      delayMs = (targetSeconds - currentSeconds) * 1000 - currentMs;
-    }
-    
-    if (scheduledRefreshRef.current) {
-      clearTimeout(scheduledRefreshRef.current);
-    }
-    
-    scheduledRefreshRef.current = setTimeout(() => {
-      console.log(`Executing refresh at ${new Date().toLocaleTimeString()}`);
-      if (selectedStop) {
-        setIsAutoRefreshing(true);
-        fetchDepartures(selectedStop.name)
-          .then(() => {
-            scheduleNextRefresh();
-          })
-          .finally(() => {
-            setIsAutoRefreshing(false);
-          });
-      }
-    }, delayMs);
 
-    console.log(`Next refresh scheduled at XX:XX:${targetSeconds} (in ${Math.round(delayMs / 1000)} seconds)`);
-  }, [processingFavoriteSelection, selectedStop, fetchDepartures]);
-
-  // Then define synchronizeToIntervals
-  const synchronizeToIntervals = useCallback(() => {
-    const now = new Date();
-    const currentSeconds = now.getSeconds();
-    const currentMs = now.getMilliseconds();
-    
-    const nextInterval = Math.ceil(currentSeconds / 20) * 20;
-    const secondsToNextBoundary = nextInterval === currentSeconds ? 20 : nextInterval - currentSeconds;
-    
-    const adjustedDelay = (secondsToNextBoundary * 1000) - currentMs;
-    
-    console.log(`Synchronizing to 20-second boundaries. Next refresh at XX:XX:${nextInterval % 60} (in ${adjustedDelay/1000} seconds)`);
-    
-    refreshTimeoutRef.current = setTimeout(() => {
-      if (selectedStop) {
-        console.log(`Executing refresh at ${new Date().toLocaleTimeString()}`);
-        
-        setIsAutoRefreshing(true);
-        fetchDepartures(selectedStop.name)
-          .then(() => {
-            scheduleNextRefresh();
-          })
-          .finally(() => {
-            setIsAutoRefreshing(false);
-          });
-      }
-    }, adjustedDelay);
-  }, [selectedStop, fetchDepartures, scheduleNextRefresh]);
-
-  
-  // Wrap fetchDepartures in useCallback
-  const fetchDepartures = useCallback(async (stopName: string | undefined, isInitialLoad = false) => {
-    if (__DEV__) {
-      console.log('Fetching departures for stop:', stopName);
-    }
-    
-    if (!stopName) {
-      if (__DEV__) {
-        console.warn('No stop name provided to fetchDepartures');
-      }
-      return;
-    }
-    
-    if ((isInitialLoad && !isAutoRefreshing) || isInitialFetch) {
-      setLoading(true);
-    }
+    setSearchLoading(true);
     
     try {
-      const url = `${API_ENDPOINTS.STATIONBOARD}?stop=${encodeURIComponent(stopName)}&limit=300&show_delays=1&transportation_types=tram,bus&mode=depart`;
-      
-      if (__DEV__) {
-        console.log('Fetching from URL:', url);
-      }
-      
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
+      const results = await departureService.current.getStopSuggestions(query);
+      setSuggestions(results);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSuggestions([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
 
-      if (data && data.connections) {
-        const nowMoment = moment().tz('Europe/Zurich');
-        const filteredDepartures: Departure[] = data.connections 
-          .filter((conn: Connection | null): conn is Connection => !!(conn && conn.time && conn.terminal && conn.terminal.name)) 
-          .map((conn: Connection) => { 
-            try {
-              const departure = moment.tz(conn.time, 'Europe/Zurich');
-              const minutesUntilDeparture = Math.ceil(moment.duration(departure.diff(nowMoment)).asMinutes());
-              return {
-                vehicleType: conn.type === 'tram' ? 'Tram' : 'Bus',
-                number: conn.line || '',
-                destination: conn.terminal.name || '',
-                departure,
-                minutes: minutesUntilDeparture,
-                delay: conn.delay ?? 0,
-                color: conn.color ? `#${conn.color.split('~')[0]}` : '#FF6600'
-              };
-            } catch (error) {
-              console.error('Error processing departure:', error);
-              
-              return {
-                vehicleType: conn.type === 'tram' ? 'Tram' : 'Bus',
-                number: conn.line || '',
-                destination: conn.terminal?.name || 'Unknown',
-                departure: nowMoment,
-                minutes: 0,
-                delay: 0,
-                color: '#FF6600'
-              };
-            }
-          });
+  const onSearchChange = useCallback((text: string) => {
+    setSearchQuery(text);
+    
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Debounce search
+    searchTimeoutRef.current = setTimeout(() => {
+      handleSearch(text);
+    }, 300);
+  }, [handleSearch]);
 
-        
-        const groupedDepartures: GroupedDeparturesMap = {}; 
-        
-        try { 
-          filteredDepartures.forEach(curr => {
-            if (!curr) return; 
-            
-            const key = `${curr.vehicleType}-${curr.number}`;
-            if (!groupedDepartures[key]) {
-              groupedDepartures[key] = {
-                vehicleType: curr.vehicleType,
-                number: curr.number,
-                color: curr.color,
-                destinations: {}
-              };
-            }
-            
-            if (!groupedDepartures[key].destinations[curr.destination]) {
-              groupedDepartures[key].destinations[curr.destination] = [];
-            }
-            
-            groupedDepartures[key].destinations[curr.destination].push(curr);
-          });
-        } catch (error) {
-          console.error('Error grouping departures:', error);
-        }
+  // Stop selection
+  const handleStopSelect = useCallback(async (stop: Stop) => {
+    setSelectedStop(stop);
+    setCurrentStop(stop);
+    setSearchQuery(stop.name);
+    setSuggestions([]);
+    setInputFocused(false);
+    Keyboard.dismiss();
 
-        
-        let filteredGroupedDepartures: GroupedDeparture[] = Object.values(groupedDepartures); 
-        
-        if (vehicleNumberFilters.length > 0) {
-          
-          const filterSet = new Set<string>(vehicleNumberFilters); 
-          
-          filteredGroupedDepartures = filteredGroupedDepartures.filter((vehicle: GroupedDeparture) => { 
-            
-            const vehicleNum = String(vehicle.number).trim();
-            
-            return filterSet.has(vehicleNum);
-          });
-        }
+    // Clear search timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
 
-        console.log('Filtered departures count:', filteredGroupedDepartures.length);
-        
-        
-        
-        const departuresArray: GroupedDeparture[] = Object.values(filteredGroupedDepartures); 
-        
-        
-        if (vehiclePositions.length > 0) {
-          const existingKeys = new Set<string>(vehiclePositions.map(p => p.vehicleKey)); 
-          const newVehicles = departuresArray.filter((v: GroupedDeparture) => !existingKeys.has(`${v.vehicleType}-${v.number}`)); 
-          
-          if (newVehicles.length > 0) {
-            console.log('New vehicles detected in this session:', newVehicles.length);
-            
-            const maxPosition = vehiclePositions.reduce((max, p) => Math.max(max, p.position), -1);
-            
-            
-            const newPositions: VehiclePosition[] = [...vehiclePositions]; 
-            
-            newVehicles.forEach((vehicle: GroupedDeparture, index: number) => { 
-              const vehicleKey = `${vehicle.vehicleType}-${vehicle.number}`;
-              newPositions.push({
-                vehicleKey,
-                position: maxPosition + 1 + index
-              });
-              console.log(`Added new vehicle ${vehicleKey} at position ${maxPosition + 1 + index}`);
-            });
-            
-            
-            setVehiclePositions(newPositions);
-          }
-        }
-        
-        setDepartures(departuresArray); 
-        
-        
-        if (isInitialFetch) {
-          setIsInitialFetch(false);
-        }
-        
-        
-        if (modalVisible && selectedVehicleNumberRef.current) {
-          const updatedVehicleData: GroupedDeparture | undefined = filteredGroupedDepartures.find( 
-            (v: GroupedDeparture) => v.number === selectedVehicleNumberRef.current 
-          );
-          
-          if (updatedVehicleData) {
-            setSelectedVehicle(updatedVehicleData || null); 
-          }
-        }
-      }
+    // Fetch departures and start auto-refresh
+    try {
+      await fetchDepartures(stop, vehicleNumberFilters);
+      startAutoRefresh(stop, vehicleNumberFilters);
     } catch (error) {
       console.error('Error fetching departures:', error);
-    } finally {
-      if ((isInitialLoad && !isAutoRefreshing) || isInitialFetch) {
-        setLoading(false);
-      }
     }
-  }, [isAutoRefreshing, isInitialFetch, vehicleNumberFilters, vehiclePositions, setVehiclePositions, modalVisible, selectedVehicleNumberRef]);
+  }, [fetchDepartures, startAutoRefresh, vehicleNumberFilters, setCurrentStop]);
 
-  const renderDepartureTime = (departure: Departure) => { 
-    
-    if (departure.minutes <= 0) {
-      return (
-        <Text style={[styles.timeText, { fontWeight: 'bold' }]}>
-          {language === 'en' ? 'Departing' : 'Départ'}
-        </Text>
-      );
-    }
-    
-    
-    if (timeFormat === 'minutes') {
-      return (
-        <Text style={styles.timeText}>
-          {departure.minutes} {language === 'en' ? 'min' : 'min'}
-        </Text>
-      );
-    } else {
-      
-      return (
-        <Text style={styles.timeText}>
-          {formatTime(departure.departure.format(), 'time')}
-        </Text>
-      );
-    }
-  };
+  // Location detection
+  const findNearestStopLocation = useCallback(async () => {
+    if (locationLoading || searchLoading) return;
 
-  const handleVehiclePress = (vehicle: GroupedDeparture) => {
-    const now = Date.now();
-    if (now - lastVehiclePressTimestampRef.current > 30000) {
-      lastVehiclePressTimestampRef.current = now;
-      if (selectedStop?.name) {
-        fetchDepartures(selectedStop.name);
-      }
-    }
-    setSelectedVehicle(vehicle);
-    selectedVehicleNumberRef.current = vehicle.number;
-    setModalVisible(true);
+    setLocationLoading(true);
     
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const closeModal = () => {
-    
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setModalVisible(false);
-      selectedVehicleNumberRef.current = null;
-    });
-  };
-  
-  
-  const getSortedDepartures = (departuresArray: GroupedDeparture[]): GroupedDeparture[] => { 
-    if (!departuresArray || departuresArray.length === 0) return [];
-    
-    
-    if (vehiclePositions.length === 0 && departuresArray.length > 0) {
-      
-      return departuresArray;
-    }
-    
-    
-    if (vehiclePositions.length > 0) {
-      
-      const sortedDepartures = [...departuresArray];
-      
-      
-      const positionMap: PositionMap = {}; 
-      vehiclePositions.forEach((pos: VehiclePosition) => { 
-        positionMap[pos.vehicleKey] = pos.position;
-      });
-      
-      
-      sortedDepartures.sort((a: GroupedDeparture, b: GroupedDeparture) => { 
-        const keyA = `${a.vehicleType}-${a.number}`;
-        const keyB = `${b.vehicleType}-${b.number}`;
-        
-        
-        if (positionMap[keyA] !== undefined && positionMap[keyB] !== undefined) {
-          return positionMap[keyA] - positionMap[keyB];
-        }
-        
-        
-        if (positionMap[keyA] !== undefined) return -1;
-        if (positionMap[keyB] !== undefined) return 1;
-        
-        
-        return 0;
-      });
-      
-      return sortedDepartures;
-    }
-    
-    
-    
-    return departuresArray;
-  };
-
-  const handleClearSearch = () => {
-    setSearchQuery('');
-    setSuggestions([]);
-    setNoResultsFound(false);
-    setHasActiveSelection(false); 
-  };
-  
-  
-  const handleTextInputBlur = () => {
-    setInputFocused(false);
-    // Don't clear suggestions immediately to allow for suggestion selection
-    setTimeout(() => {
-      setSuggestions([]);
-    }, 200);
-  };
-
-  
-  const handleTextInputFocus = () => {
-    setInputFocused(true);
-    
-    if (searchQuery.trim().length > 1) {
-      setHasActiveSelection(false);
-      
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-      
-      searchTimeoutRef.current = setTimeout(async () => {
-        setSearchLoading(true);
-        try {
-          const results = await getStopSuggestions(searchQuery);
-          setSuggestions(results.slice(0, 4));
-          setNoResultsFound(results.length === 0);
-        } catch (error) {
-          console.error('Error getting suggestions on focus:', error);
-          setSuggestions([]);
-        } finally {
-          setSearchLoading(false);
-        }
-      }, 300); 
-    }
-  };
-
-  const handleSearchInputChange = useCallback((text: string) => {
-    setSearchQuery(text);
-    setHasActiveSelection(false);
-    
-    if (text.trim().length < 2) {
-      setSuggestions([]);
-      setNoResultsFound(false);
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-        searchTimeoutRef.current = null;
-      }
-      return;
-    }
-    
-    // Clear any existing timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-      searchTimeoutRef.current = null;
-    }
-    
-    // Use a shorter debounce time for better responsiveness
-    setSearchLoading(true);
-    searchTimeoutRef.current = setTimeout(async () => {
-      if (__DEV__) {
-        console.log('Debounced search triggered for query:', text);
-      }
-      try {
-        const results = await getStopSuggestions(text);
-        if (__DEV__) {
-          console.log('Debounced search found suggestions:', results.length);
-        }
-        setSuggestions(results.slice(0, 4));
-        setNoResultsFound(results.length === 0);
-      } catch (error) {
-        console.error('Error getting suggestions:', error);
-        setSuggestions([]);
-        setNoResultsFound(true);
-      } finally {
-        setSearchLoading(false);
-      }
-    }, 200); // Reduced from 300ms to 200ms for better responsiveness
-  }, [getStopSuggestions]);
-  
-  // Log function that only runs in development mode
-  const devLog = (...args: any[]) => {
-    if (__DEV__) {
-      console.log(...args);
-    }
-  };
-
-  const handleStopSelect = useCallback((stop: Stop) => {
-    if (__DEV__) {
-      console.log('Selected stop:', stop);
-    }
-    
-    // Ensure we have a valid stop name
-    if (!stop || !stop.name) {
-      if (__DEV__) {
-        console.warn('Invalid stop selected');
-      }
-      return;
-    }
-    
-    setSelectedStop(stop);
-    setCurrentStop(stop);
-    setSearchQuery(stop.name); // Set the full name in the search input
-    setSuggestions([]);
-    setInputFocused(false);
-    setHasActiveSelection(true);
-    Keyboard.dismiss();
-    
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-      searchTimeoutRef.current = null;
-    }
-    
-    // Immediately fetch departures when a stop is selected
-    fetchDepartures(stop.name);
-  }, [setCurrentStop, fetchDepartures]);
-  
-  const handleSearchSubmit = useCallback(() => {
-    if (__DEV__) {
-      console.log('Search submitted with query:', searchQuery);
-    }
-    
-    const trimmedQuery = searchQuery.trim();
-    if (trimmedQuery.length < 2) return;
-    
-    // Always use the text in the search box directly
-    const stop = { name: trimmedQuery };
-    if (__DEV__) {
-      console.log('Creating stop from query:', stop);
-    }
-    
-    setSelectedStop(stop);
-    setCurrentStop(stop);
-    setHasActiveSelection(true);
-    setInputFocused(false);
-    Keyboard.dismiss();
-    setSuggestions([]);
-    
-    // Immediately fetch departures
-    fetchDepartures(trimmedQuery);
-  }, [searchQuery, setCurrentStop, fetchDepartures]);
-
-  
-  
-  const handleLocationPress = useCallback(async () => {
-    if (loading || searchLoading) return;
-    
-    setLoading(true);
     try {
-      const result = await findNearestStop();
+      const locationResult = await locationService.current.getCurrentLocation();
       
-      if ('error' in result) {
-        if (__DEV__) {
-          console.log('Location error:', result.error);
-        }
-        alert(language === 'en' ? 'Could not detect your location' : 'Impossible de détecter votre position');
+      if ('error' in locationResult) {
+        Alert.alert(
+          language === 'en' ? 'Location Error' : 'Erreur de localisation',
+          language === 'en' ? 'Could not detect your location' : 'Impossible de détecter votre position'
+        );
         return;
       }
+
+      const nearestStop = await findNearestStop(locationResult.latitude, locationResult.longitude);
       
-      if (result) {
-        // Call handleStopSelect directly without adding it to dependencies
-        if (__DEV__) {
-          console.log('Selected stop:', result);
-        }
-        setSelectedStop(result);
-        setCurrentStop(result);
-        setSearchQuery(result.name);
-        setSuggestions([]);
-        setInputFocused(false);
-        setHasActiveSelection(true);
-        Keyboard.dismiss();
-        
-        if (searchTimeoutRef.current) {
-          clearTimeout(searchTimeoutRef.current);
-          searchTimeoutRef.current = null;
-        }
+      if (nearestStop) {
+        await handleStopSelect(nearestStop);
       } else {
-        alert(language === 'en' ? 'No stops found nearby' : 'Aucun arrêt trouvé à proximité');
+        Alert.alert(
+          language === 'en' ? 'No Stops Found' : 'Aucun arrêt trouvé',
+          language === 'en' ? 'No stops found nearby' : 'Aucun arrêt trouvé à proximité'
+        );
       }
     } catch (error) {
-      if (__DEV__) {
-        console.error('Error finding nearest stop:', error);
-      }
-      alert(language === 'en' ? 'Error detecting location' : 'Erreur lors de la détection de la position');
+      console.error('Error finding nearest stop:', error);
+      Alert.alert(
+        language === 'en' ? 'Error' : 'Erreur',
+        language === 'en' ? 'Error detecting location' : 'Erreur lors de la détection de la position'
+      );
     } finally {
-      setLoading(false);
+      setLocationLoading(false);
     }
-  }, [findNearestStop, language, loading, searchLoading, setCurrentStop]);
-  
+  }, [findNearestStop, handleStopSelect, language, locationLoading, searchLoading]);
+
+  // Vehicle filter management
   const addVehicleNumberFilter = useCallback(() => {
     if (!vehicleNumberInput.trim()) return;
     
@@ -864,400 +165,311 @@ export default function StopsScreen() {
     if (!vehicleNumberFilters.includes(newFilter)) {
       const newFilters = [...vehicleNumberFilters, newFilter];
       setVehicleNumberFilters(newFilters);
-      setGlobalFilters(newFilters);
+      
+      // Refresh departures with new filters
+      if (selectedStop) {
+        fetchDepartures(selectedStop, newFilters);
+        startAutoRefresh(selectedStop, newFilters);
+      }
     }
     
     setVehicleNumberInput('');
-  }, [vehicleNumberInput, vehicleNumberFilters, setGlobalFilters]);
-  
+  }, [vehicleNumberInput, vehicleNumberFilters, selectedStop, fetchDepartures, startAutoRefresh]);
+
   const removeVehicleNumberFilter = useCallback((number: string) => {
     const newFilters = vehicleNumberFilters.filter(n => n !== number);
     setVehicleNumberFilters(newFilters);
-    setGlobalFilters(newFilters);
-  }, [vehicleNumberFilters, setGlobalFilters]);
+    
+    // Refresh departures with updated filters
+    if (selectedStop) {
+      fetchDepartures(selectedStop, newFilters);
+      startAutoRefresh(selectedStop, newFilters);
+    }
+  }, [vehicleNumberFilters, selectedStop, fetchDepartures, startAutoRefresh]);
 
-  // Wrap refresh in useCallback
-  const refresh = useCallback(async () => {
+
+  // Manual refresh
+  const handleManualRefresh = useCallback(async () => {
     if (!selectedStop) return;
     
-    if (__DEV__) {
-      console.log('Manually refreshing departures for:', selectedStop.name);
-    }
-    
-    if (departures.length === 0) {
-      setLoading(true);
-    } else {
-      setIsAutoRefreshing(true);
-    }
-    
     try {
-      await fetchDepartures(selectedStop.name);
-      scheduleNextRefresh();
+      await manualRefresh();
     } catch (error) {
-      if (__DEV__) {
-        console.error('Error refreshing departures:', error);
-      }
-      alert(language === 'en' ? 'Error refreshing departures' : 'Erreur lors du rafraîchissement des départs');
-    } finally {
-      setLoading(false);
-      setIsAutoRefreshing(false);
+      Alert.alert(
+        language === 'en' ? 'Refresh Error' : 'Erreur de rafraîchissement',
+        language === 'en' ? 'Failed to refresh departures' : 'Échec du rafraîchissement des départs'
+      );
     }
-  }, [departures.length, fetchDepartures, language, scheduleNextRefresh, selectedStop, setIsAutoRefreshing, setLoading]);
-  
-  // Fix useEffect dependencies
+  }, [selectedStop, manualRefresh, language]);
+
+  // Keyboard listeners
   useEffect(() => {
-    if (selectedStop) {
-      setIsInitialFetch(true);
-      refresh();
-    }
-  }, [selectedStop, vehicleNumberFilters, refresh]);
-  
-  useEffect(() => {
-    if (selectedStop) {
-      synchronizeToIntervals();
-    }
-  
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      (e) => setKeyboardHeight(e.endCoordinates.height)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setKeyboardHeight(0)
+    );
+
     return () => {
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-      }
-      if (scheduledRefreshRef.current) {
-        clearTimeout(scheduledRefreshRef.current);
-      }
-    };
-  }, [selectedStop, synchronizeToIntervals]);
-  
-  // Fix cleanup for departureUpdateTimeoutRef
-  useEffect(() => {
-    // Store ref value in a variable inside the effect to avoid the exhaustive deps warning
-    return () => {
-      const timeoutRef = departureUpdateTimeoutRef.current;
-      if (timeoutRef) {
-        clearTimeout(timeoutRef);
-      }
-    };
-  }, []);
-  
-  
-  useEffect(() => {
-    return () => {
-      // Store ref values in variables inside the cleanup function to avoid the exhaustive deps warning
-      const refreshTimeout = refreshTimeoutRef.current;
-      const scheduledRefreshTimeout = scheduledRefreshRef.current;
-      const searchTimeout = searchTimeoutRef.current;
-      const departureUpdateTimeout = departureUpdateTimeoutRef.current;
-      
-      if (refreshTimeout) {
-        clearTimeout(refreshTimeout);
-      }
-      if (scheduledRefreshTimeout) {
-        clearTimeout(scheduledRefreshTimeout);
-      }
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-      }
-      if (departureUpdateTimeout) {
-        clearTimeout(departureUpdateTimeout);
-      }
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
     };
   }, []);
 
-  
+  // Initialize with current stop
   useEffect(() => {
-    if (modalVisible && selectedVehicleNumberRef.current && departures.length > 0) { 
+    if (currentStop && !selectedStop) {
+      setSelectedStop(currentStop);
+      setSearchQuery(currentStop.name);
+      fetchDepartures(currentStop, vehicleNumberFilters);
+      startAutoRefresh(currentStop, vehicleNumberFilters);
+    }
+  }, [currentStop, selectedStop, fetchDepartures, startAutoRefresh, vehicleNumberFilters]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopAutoRefresh();
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [stopAutoRefresh]);
+
+  // Render functions
+  const renderSuggestion = ({ item }: { item: Stop }) => (
+    <TouchableOpacity
+      style={[styles.suggestionItem, { borderBottomColor: theme.border }]}
+      onPress={() => handleStopSelect(item)}
+    >
+      <MapPin size={16} color={theme.textSecondary} />
+      <Text style={[styles.suggestionText, { color: theme.text }]}>{item.name}</Text>
+    </TouchableOpacity>
+  );
+
+  const renderVehicleFilter = ({ item }: { item: string }) => (
+    <View style={[styles.filterChip, { backgroundColor: theme.primary }]}>
+      <Text style={styles.filterChipText}>{item}</Text>
+      <TouchableOpacity
+        onPress={() => removeVehicleNumberFilter(item)}
+        style={styles.filterChipRemove}
+      >
+        <X size={14} color="white" />
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderDeparture = ({ item }: { item: GroupedDeparture }) => (
+    <View
+      style={[styles.departureItem, { borderColor: theme.border }]}
+    >
+      <View style={[styles.vehicleIcon, { backgroundColor: item.color }]}>
+        <Text style={styles.vehicleNumber}>{item.number}</Text>
+      </View>
       
-      const updatedVehicleData = departures.find((v: GroupedDeparture) => v.number === selectedVehicleNumberRef.current); 
-      
-      if (updatedVehicleData) {
+      <View style={styles.departureInfo}>
+        <Text style={[styles.vehicleType, { color: theme.text }]}>
+          {item.vehicleType} {item.number}
+        </Text>
         
-        setSelectedVehicle(updatedVehicleData || null); 
-      }
-    }
-  }, [departures, modalVisible]);
-
-  
-  useEffect(() => {
-    
-    if (departures.length > 0 && vehiclePositions.length === 0) { 
-      const initialPositions: VehiclePosition[] = departures.map((item: GroupedDeparture, index: number) => ({ 
-        vehicleKey: `${item.vehicleType}-${item.number}`,
-        position: index
-      }));
-      
-      
-      setTimeout(() => {
-        setVehiclePositions(initialPositions);
-      }, 0);
-    }
-  }, [departures, vehiclePositions.length, setVehiclePositions]);
+        {Object.entries(item.destinations).map(([destination, times]) => (
+          <View key={destination} style={styles.destinationRow}>
+            <Text style={[styles.destinationText, { color: theme.textSecondary }]} numberOfLines={1}>
+              {destination}
+            </Text>
+            <View style={styles.timesContainer}>
+              {times.slice(0, 3).map((time, index) => {
+                const timeValue = formatTime(time.departure.toISOString(), timeFormat);
+                const isDelayed = time.delay > 0;
+                
+                return (
+                  <View key={index} style={styles.timeChip}>
+                    <Text style={[styles.timeText, { color: theme.text }]}>
+                      {timeFormat === 'minutes' 
+                        ? `${timeValue} ${language === 'en' ? 'min' : 'min'}`
+                        : timeValue
+                      }
+                    </Text>
+                    {isDelayed && (
+                      <Text style={styles.delayText}>
+                        +{time.delay}
+                      </Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: darkMode ? '#000000' : '#FFFFFF' }]}>
-        <View style={[styles.header, { backgroundColor: darkMode ? '#000000' : '#FFFFFF' }]}>
-          <Text style={[styles.title, { color: '#FF6600' }]}>
-            {language === 'en' ? 'TPG Bus and Tram' : 'Bus et Tram TPG'}
-          </Text>
-          {}
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top }]}>
+        <Text style={[styles.title, { color: theme.text }]}>
+          {language === 'en' ? 'TPG Times' : 'Horaires TPG'}
+        </Text>
+      </View>
+
+      {/* Search Section */}
+      <View style={styles.searchSection}>
+        <View 
+          style={[
+            styles.searchContainer, 
+            { 
+              borderColor: theme.border,
+              borderBottomLeftRadius: inputFocused && suggestions.length > 0 ? 0 : 12,
+              borderBottomRightRadius: inputFocused && suggestions.length > 0 ? 0 : 12,
+            }
+          ]}
+          onLayout={(event) => {
+            const { x, y, width, height } = event.nativeEvent.layout;
+            // Calculate absolute position: header height + safe area + search section position
+            const absoluteY = insets.top + 50 + y + 10; // header ~50px + section padding 10px
+            setSearchBoxLayout({ x: x + 20, y: absoluteY, width, height });
+          }}
+        >
+          <Search size={20} color={theme.textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: theme.text }]}
+            placeholder={language === 'en' ? 'Search for a stop...' : 'Rechercher un arrêt...'}
+            placeholderTextColor={theme.textSecondary}
+            value={searchQuery}
+            onChangeText={onSearchChange}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
+          />
+          {searchLoading && <ActivityIndicator size="small" color={theme.primary} />}
         </View>
 
-        <View style={styles.searchContainer}>
-          <View style={styles.searchInputWrapper}>
-            <View style={[styles.inputContainer, { 
-              backgroundColor: darkMode ? '#1C1C1E' : '#F5F5F5',
-              borderRadius: 10,
-              borderColor: theme.stopNameBorder,
-              borderWidth: 1,
-              overflow: 'hidden' // Ensure content doesn't overflow rounded corners
-            }]}>
-              <Search size={20} color="#FF6600" style={styles.searchIcon} />
-              <TextInput
-                style={[styles.input, { 
-                  color: darkMode ? '#FFFFFF' : '#333',
-                  borderRadius: 10 // Match parent container's border radius
-                }]}
-                placeholder={language === 'en' ? 'Enter stop name' : 'Nom de l\'arrêt'}
-                value={searchQuery}
-                onChangeText={handleSearchInputChange}
-                onSubmitEditing={handleSearchSubmit} // This triggers when Enter/Return is pressed
-                onBlur={handleTextInputBlur}
-                onFocus={handleTextInputFocus}
-                returnKeyType="search" // Change to search for better UX
-                blurOnSubmit={true}
-                placeholderTextColor={darkMode ? '#666666' : '#999'}
-                autoCorrect={false}
-                autoCapitalize="words" // Auto-capitalize for stop names
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={handleClearSearch} style={styles.clearButton}>
-                  <X size={18} color={darkMode ? '#999999' : '#666666'} />
-                </TouchableOpacity>
-              )}
-              {searchLoading && <ActivityIndicator size="small" color="#FF6600" style={styles.loadingIndicator} />}
-            </View>
-            
-            {}
-            {inputFocused && suggestions && suggestions.length > 0 && (
-              <FlatList
-                data={suggestions}
-                scrollEnabled={false}
-                keyboardShouldPersistTaps="handled"
-                renderItem={({ item, index }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.suggestion,
-                      index === (suggestions && suggestions.length - 1) ? styles.lastSuggestion : {},
-                      { 
-                        backgroundColor: theme.background,
-                        borderBottomColor: theme.suggestionsBorder,
-                        borderBottomWidth: index === (suggestions && suggestions.length - 1) ? 0 : 1
-                      }
-                    ]}
-                    onPress={() => handleStopSelect(item)}
-                  >
-                    <Text style={[styles.suggestionText, { color: theme.text }]}>{item.name}</Text>
-                  </TouchableOpacity>
-                )}
-                style={[styles.suggestionsList, {
-                  backgroundColor: theme.background,
-                  borderColor: theme.suggestionsBorder
-                }]}
-              />
-            )}
-          </View>
-          
-          <TouchableOpacity
-            style={styles.locationButton}
-            onPress={handleLocationPress}
-            disabled={loading || searchLoading}>
-            <MapPin size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.locationButton, { backgroundColor: theme.primary }]}
+          onPress={findNearestStopLocation}
+          disabled={locationLoading}
+        >
+          {locationLoading ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <MapPin size={20} color="white" />
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Suggestions - Connected to Search Box */}
+      {inputFocused && suggestions.length > 0 && (
+        <View 
+          style={[
+            styles.suggestionsContainer, 
+            { 
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+              top: searchBoxLayout.y + searchBoxLayout.height - 1, // -1px to connect seamlessly
+              left: searchBoxLayout.x,
+              width: searchBoxLayout.width,
+              maxHeight: Math.min(300, (insets.bottom + keyboardHeight > 0 ? 
+                (Dimensions.get('window').height - searchBoxLayout.y - searchBoxLayout.height - keyboardHeight - 100) : 
+                300)),
+            }
+          ]}
+        >
+          <FlatList
+            data={suggestions}
+            renderItem={renderSuggestion}
+            keyExtractor={(item, index) => `${item.id || item.name}-${index}`}
+            style={styles.suggestionsList}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          />
         </View>
-        
-        {}
-        
-        {}
-        <View style={[styles.filterContainer, { backgroundColor: darkMode ? '#1C1C1E' : '#F5F5F5', borderColor: theme.vehicleNumberBorder }]}>
-          <View style={styles.filterInputContainer}>
+      )}
+
+      {/* Vehicle Filters */}
+      {!inputFocused && (
+        <View style={styles.filtersSection}>
+          <View style={[styles.filterInputContainer, { borderColor: theme.border }]}>
             <TextInput
-              style={[styles.filterInput, { color: darkMode ? '#FFFFFF' : '#333' }]}
-              placeholder={language === 'en' ? 'Enter bus/tram number' : 'Numéro de bus/tram'}
+              style={[styles.filterInput, { color: theme.text }]}
+              placeholder={language === 'en' ? 'Filter by vehicle number...' : 'Filtrer par numéro...'}
+              placeholderTextColor={theme.textSecondary}
               value={vehicleNumberInput}
               onChangeText={setVehicleNumberInput}
-              placeholderTextColor={darkMode ? '#666666' : '#999'}
-              keyboardType="numeric"
-              returnKeyType="done"
-              blurOnSubmit={true}
               onSubmitEditing={addVehicleNumberFilter}
             />
-            <TouchableOpacity 
-              style={styles.addButton}
+            <TouchableOpacity
+              style={[styles.addFilterButton, { backgroundColor: theme.primary }]}
               onPress={addVehicleNumberFilter}
-              disabled={!vehicleNumberInput.trim()}
             >
-              <Plus size={20} color="#FFFFFF" />
+              <Plus size={16} color="white" />
             </TouchableOpacity>
           </View>
-          
+
           {vehicleNumberFilters.length > 0 && (
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false} 
-              style={styles.chipsContainer}
-              contentContainerStyle={styles.chipsContent}
-            >
-              {vehicleNumberFilters.map((number) => (
-                <TouchableOpacity 
-                  key={number} 
-                  style={[styles.chip, { backgroundColor: darkMode ? '#333333' : '#DDDDDD' }]}
-                  onPress={() => removeVehicleNumberFilter(number)}
-                >
-                  <Text style={[styles.chipText, { color: darkMode ? '#FFFFFF' : '#333333' }]}>{number}</Text>
-                  <X size={16} color={darkMode ? '#FFFFFF' : '#333333'} style={styles.chipIcon} />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <FlatList
+              data={vehicleNumberFilters}
+              renderItem={renderVehicleFilter}
+              keyExtractor={(item) => item}
+              horizontal
+              style={styles.filtersRow}
+              showsHorizontalScrollIndicator={false}
+            />
           )}
         </View>
+      )}
 
-        {noResultsFound && !loading && (
-          <View style={[styles.noResultsContainer, { backgroundColor: darkMode ? '#1C1C1E' : '#F5F5F5', borderColor: theme.border }]}>
-            <Text style={[styles.noResultsText, { color: darkMode ? '#FFFFFF' : '#333' }]}>
-              {language === 'en' ? 'No stops found. Please try another search.' : 'Aucun arrêt trouvé. Veuillez essayer une autre recherche.'}
-            </Text>
-          </View>
-        )}
+      {/* Departures Section */}
+      {!inputFocused && selectedStop && (
+        <View style={[styles.departuresSection, { 
+          backgroundColor: darkMode ? 'rgba(28, 28, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+          shadowColor: darkMode ? '#000' : '#000',
+        }]}>
+          {departuresError && (
+            <View style={[styles.errorContainer, { backgroundColor: theme.surface }]}>
+              <Text style={[styles.errorText, { color: '#FF3B30' }]}>
+                {departuresError}
+              </Text>
+            </View>
+          )}
 
-        {loading && !isAutoRefreshing && departures.length === 0 ? (
-          <ActivityIndicator style={styles.loader} color="#FF6600" />
-        ) : (
-          <View style={styles.vehiclesContainer}>
+          {departuresLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={theme.primary} />
+              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+                {language === 'en' ? 'Loading departures...' : 'Chargement des départs...'}
+              </Text>
+            </View>
+          ) : (
             <FlatList
-              style={styles.vehiclesList}
-              data={getSortedDepartures(departures)}
-              keyExtractor={(item: GroupedDeparture) => `${item.vehicleType}-${item.number}`} 
-              numColumns={3}
-              renderItem={({ item }: { item: GroupedDeparture }) => ( 
-                <TouchableOpacity
-                  style={[styles.vehicleButton, { backgroundColor: item.color }]}
-                  onPress={() => handleVehiclePress(item)}>
-                  <Text style={styles.vehicleNumber}>{item.number}</Text>
-                  <Text style={styles.vehicleType}>{item.vehicleType}</Text>
-                </TouchableOpacity>
-              )}
-              contentContainerStyle={[styles.vehiclesGrid, { flexGrow: 1, paddingBottom: insets.bottom + (Platform.OS === 'ios' ? 75 : 65) }]}
-              columnWrapperStyle={styles.vehiclesRow}
-              scrollIndicatorInsets={{ bottom: insets.bottom + (Platform.OS === 'ios' ? 75 : 65) }}
-            />
-          </View>
-        )}
-
-        <Modal
-          animationType="none"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => {
-            closeModal();
-          }}>
-          <Animated.View 
-            style={[styles.modalOverlay, {
-              opacity: fadeAnim,
-            }]}
-          >
-            <Pressable 
-              style={styles.modalBackdrop}
-              onPress={closeModal}
-            >
-              <Animated.View 
-                style={[styles.modalContent, 
-                  { backgroundColor: darkMode ? '#1C1C1E' : '#FFFFFF', borderColor: theme.border },
-                  {
-                    transform: [{
-                      translateY: fadeAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [300, 0],
-                      })
-                    }]
-                  }
-                ]}
-                
-                onStartShouldSetResponder={() => true}
-                onTouchEnd={(e) => e.stopPropagation()}
-              >
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>
-                    {selectedVehicle?.vehicleType} {selectedVehicle?.number}
+              data={departures}
+              renderItem={renderDeparture}
+              keyExtractor={(item) => `${item.vehicleType}-${item.number}`}
+              style={styles.departuresList}
+              showsVerticalScrollIndicator={false}
+              refreshing={refreshing}
+              onRefresh={handleManualRefresh}
+              ListHeaderComponent={<View style={{ height: 16 }} />}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                    {language === 'en' 
+                      ? 'No departures found' 
+                      : 'Aucun départ trouvé'
+                    }
                   </Text>
-                  <TouchableOpacity
-                    style={styles.closeButton}
-                    onPress={closeModal}>
-                    <X size={24} color="#FF6600" />
-                  </TouchableOpacity>
                 </View>
-                
-                <ScrollView style={styles.modalScroll}>
-                  {selectedVehicle && Object.entries(selectedVehicle.destinations).map(([destination, times]) => { 
-                    const departureTimes = times as Departure[]; 
-                    return ( 
-                    <View key={destination} style={styles.destinationSection}>
-                      <Text style={[styles.destinationTitle, { color: darkMode ? '#FFFFFF' : '#333' }]}>
-                        {language === 'en' ? 'To: ' : 'Vers: '}{destination}
-                      </Text>
-                      <View style={styles.timesGrid}>
-                        {departureTimes.slice(0, 4).map((time: Departure, index: number) => { 
-                          
-                          const isDeparting = time.minutes <= 0;
-                          
-                          return (
-                            <View
-                              key={index}
-                              style={[
-                                styles.timeBoxContainer,
-                              ]}>
-                              {isDeparting ? (
-                                
-                                <View 
-                                  style={[
-                                    styles.timeBox,
-                                    { backgroundColor: selectedVehicle.color },
-                                    styles.departingTimeBox
-                                  ]}
-                                >
-                                  <Text style={[
-                                    styles.timeText,
-                                    styles.departingTimeText
-                                  ]}>
-                                    {renderDepartureTime(time)}
-                                  </Text>
-                                </View>
-                              ) : (
-                                
-                                <View 
-                                  style={[
-                                    styles.timeBox,
-                                    { 
-                                      backgroundColor: time.delay > 0 ? 'yellow' : selectedVehicle.color
-                                    }
-                                  ]}
-                                >
-                                  <Text style={styles.timeText}>
-                                    {renderDepartureTime(time)}
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
-                          );
-                        })}
-                      </View>
-                    </View>
-                  );})}
-                </ScrollView>
-              </Animated.View>
-            </Pressable>
-          </Animated.View>
-        </Modal>
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+              }
+            />
+          )}
+        </View>
+      )}
+
+    </SafeAreaView>
   );
 }
 
@@ -1266,269 +478,227 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: 20,
-    paddingTop: Platform.OS === 'ios' ? 0 : 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 10,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    flex: 1,
-    textAlign: 'center',
   },
-  
-  searchContainer: {
+  searchSection: {
     flexDirection: 'row',
     paddingHorizontal: 20,
+    paddingVertical: 10,
     gap: 10,
-    zIndex: 20,
+    zIndex: 1001, // Ensure search section is above suggestions
   },
-  searchInputWrapper: {
+  searchContainer: {
     flex: 1,
-    zIndex: 20,
-    position: 'relative',
-  },
-  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    paddingHorizontal: 15,
     borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
   },
-  searchIcon: {
-    marginRight: 10,
-  },
-  input: {
+  searchInput: {
     flex: 1,
-    height: 50,
     fontSize: 16,
   },
-  suggestionsList: {
+  locationButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  suggestionsContainer: {
     position: 'absolute',
-    top: 50,
-    left: 0,
-    right: 0,
-    zIndex: 1000, 
-    maxHeight: 220, 
-    backgroundColor: '#fff',
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
+    zIndex: 1000,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    maxHeight: 300,
     borderWidth: 1,
     borderTopWidth: 0,
-    marginTop: 1,
-    overflow: 'hidden',
   },
-  filterContainer: {
-    marginTop: 10,
-    marginHorizontal: 20,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderWidth: 1,
+  suggestionsList: {
+    flexGrow: 0,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    gap: 12,
+  },
+  suggestionText: {
+    fontSize: 16,
+    flex: 1,
+  },
+  filtersSection: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 16,
   },
   filterInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
   },
   filterInput: {
     flex: 1,
-    height: 40,
     fontSize: 16,
   },
-  addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  addFilterButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 10,
-    backgroundColor: COLORS.PRIMARY,
   },
-  chipsContainer: {
+  filtersRow: {
     marginTop: 10,
-    maxHeight: 40,
   },
-  chipsContent: {
+  filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingRight: 10,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    borderRadius: 16,
     marginRight: 8,
+    gap: 6,
   },
-  chipText: {
+  filterChipText: {
+    color: 'white',
     fontSize: 14,
-    marginRight: 4,
+    fontWeight: '500',
   },
-  chipIcon: {
-    marginLeft: 2,
-  },
-  locationButton: {
-    width: 50,
-    height: 50,
-    backgroundColor: COLORS.PRIMARY,
-    borderRadius: 10,
+  filterChipRemove: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loader: {
-    marginLeft: 10,
-  },
-  
-  suggestion: {
-    padding: 15,
-    borderBottomWidth: 0, 
-    
-  },
-  lastSuggestion: {
-    borderBottomWidth: 0,
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
-    paddingBottom: 16,
-  },
-  suggestionText: {
-    fontSize: 16,
-  },
-  vehiclesContainer: {
+  departuresSection: {
     flex: 1,
-    minHeight: 0,
-    flexGrow: 1,
-  },
-  vehiclesGrid: {
-    padding: 0,
-    flexGrow: 1,
-    alignItems: 'center',
-  },
-  vehiclesRow: {
-    justifyContent: 'center',
-  },
-  vehicleButton: {
-    width: 110,
-    height: 110,
-    margin: 8,
-    borderRadius: 55,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: COLORS.UTILITY.SHADOW,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  vehicleNumber: {
-    color: COLORS.TEXT.DARK,
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  vehicleType: {
-    color: COLORS.TEXT.DARK,
-    fontSize: 14,
-    marginTop: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalBackdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', 
-  },
-  modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    minHeight: '50%',
-    maxHeight: '80%',
-    padding: 20,
-    borderWidth: 1,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.PRIMARY,
-  },
-  closeButton: {
-    padding: 5,
-  },
-  modalScroll: {
-    flex: 1,
-  },
-  destinationSection: {
-    marginBottom: 20,
-  },
-  destinationTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  timesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  timeBoxContainer: {
-    width: '48%',  
-    marginBottom: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  timeBox: {
-    width: '100%',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    
-    
-  },
-  timeText: {
-    color: COLORS.TEXT.DARK,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  loadingIndicator: {
-    marginLeft: 10,
-  },
-  clearButton: {
-    padding: 6,
-  },
-  noResultsContainer: {
-    padding: 20,
     marginHorizontal: 20,
-    marginTop: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-    borderWidth: 1,
+    marginTop: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    paddingHorizontal: 16,
   },
-  noResultsText: {
-    fontSize: 16,
+  errorContainer: {
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+    marginBottom: 10,
+  },
+  errorText: {
+    fontSize: 14,
     textAlign: 'center',
   },
-  departingTimeBox: {
-    backgroundColor: COLORS.STATUS.ERROR,
-    padding: 13, 
-  },
-  departingTimeText: {
-    fontWeight: 'bold',
-    fontSize: 18,
-    color: COLORS.TEXT.DARK,
-  },
-  vehiclesList: {
+  loadingContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  loadingText: {
+    fontSize: 16,
+  },
+  departuresList: {
+    flex: 1,
+  },
+  departureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+    gap: 12,
+  },
+  vehicleIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  vehicleNumber: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  departureInfo: {
+    flex: 1,
+  },
+  vehicleType: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  destinationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  destinationText: {
+    fontSize: 14,
+    flex: 1,
+    marginRight: 8,
+  },
+  timesContainer: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  timeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  timeText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  delayText: {
+    fontSize: 12,
+    color: '#FF3B30',
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
   },
 });

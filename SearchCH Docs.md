@@ -16,12 +16,56 @@
 **Example Response**  
 ```json
 [
-   {
-      "label": "Lu",
-      "html": "<span class=\"sl-keyword\">Lu</span>zern",
-      "iconclass": "sl-icon-type-zug"
-   },
-   [...]
+  {
+    "label": "Luzern",
+    "iconclass": "sl-icon-type-train",
+    "html": "\u003Cspan class=\"sl-keyword\"\u003ELu\u003C/span\u003Ezern"
+  },
+  {
+    "label": "Lugano",
+    "iconclass": "sl-icon-type-train",
+    "html": "\u003Cspan class=\"sl-keyword\"\u003ELu\u003C/span\u003Egano"
+  },
+  {
+    "label": "Luzern, Bahnhof",
+    "iconclass": "sl-icon-type-bus",
+    "html": "\u003Cspan class=\"sl-keyword\"\u003ELu\u003C/span\u003Ezern, Bahnhof"
+  },
+  {
+    "label": "Luzern, Kantonalbank",
+    "iconclass": "sl-icon-type-bus",
+    "html": "\u003Cspan class=\"sl-keyword\"\u003ELu\u003C/span\u003Ezern, Kantonalbank"
+  },
+  {
+    "label": "Lutry",
+    "iconclass": "sl-icon-type-train",
+    "html": "\u003Cspan class=\"sl-keyword\"\u003ELu\u003C/span\u003Etry"
+  },
+  {
+    "label": "Luzern, Pilatusplatz",
+    "iconclass": "sl-icon-type-bus",
+    "html": "\u003Cspan class=\"sl-keyword\"\u003ELu\u003C/span\u003Ezern, Pilatusplatz"
+  },
+  {
+    "label": "Lohn-Lüterkofen",
+    "iconclass": "sl-icon-type-train",
+    "html": "Lohn-\u003Cspan class=\"sl-keyword\"\u003ELü\u003C/span\u003Eterkofen"
+  },
+  {
+    "label": "Lugano, Centro",
+    "iconclass": "sl-icon-type-bus",
+    "html": "\u003Cspan class=\"sl-keyword\"\u003ELu\u003C/span\u003Egano, Centro"
+  },
+  {
+    "label": "Luzern, Schwanenplatz",
+    "iconclass": "sl-icon-type-bus",
+    "html": "\u003Cspan class=\"sl-keyword\"\u003ELu\u003C/span\u003Ezern, Schwanenplatz"
+  },
+  {
+    "label": "Luzern Allmend/Messe",
+    "iconclass": "sl-icon-type-train",
+    "html": "\u003Cspan class=\"sl-keyword\"\u003ELu\u003C/span\u003Ezern Allmend/Messe"
+  }
 ]
 ```
 
