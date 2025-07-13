@@ -419,7 +419,7 @@ export default function StopsScreen() {
                   keyExtractor={(item) => item}
                   horizontal
                   style={styles.filtersRow}
-                  showsHorizontalScrollIndicator={false}
+                  showsVerticalScrollIndicator={false}
                 />
               )}
             </View>
@@ -709,18 +709,5 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     textAlign: 'center',
-  },
-  accessoryView: {
-    padding: 10,
-    alignItems: 'flex-end',
-    borderTopWidth: 1,
-  },
-  accessoryButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  accessoryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
