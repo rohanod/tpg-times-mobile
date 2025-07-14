@@ -9,7 +9,6 @@
       "enabled": true
     },
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
     "scheme": "tpgtimes",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -18,6 +17,11 @@
       "bundleIdentifier": "com.rohanodwyer.tpgtimes",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "icon": {
+        "light": "./assets/images/ios-light.png",
+        "dark": "./assets/images/ios-dark.png",
+        "tinted": "./assets/images/ios-tinted.png"
       }
     },
     "web": {

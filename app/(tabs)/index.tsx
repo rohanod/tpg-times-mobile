@@ -31,10 +31,12 @@ import { getThemeColors } from '../../config/theme';
 import DepartureService, { type Stop, type GroupedDeparture } from '../../services/DepartureService';
 import LocationService from '../../services/LocationService';
 
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window'); 
+
 const AnimatedDepartureItem = React.memo(
   ({ item, index, isVisible, language, timeFormat, darkMode, theme }) => {
     const opacity = useSharedValue(0);
-    const translateX = useSharedValue(Dimensions.get('window').width);
+    const translateX = useSharedValue(screenWidth);
 
     const animatedStyle = useAnimatedStyle(() => ({
       opacity: opacity.value,
@@ -51,7 +53,7 @@ const AnimatedDepartureItem = React.memo(
         translateX.value = withDelay(delay, withTiming(0, { duration, easing }));
       } else {
         opacity.value = withTiming(0, { duration: 200, easing: Easing.in(Easing.ease) });
-        translateX.value = withTiming(Dimensions.get('window').width, {
+        translateX.value = withTiming(screenWidth, {
           duration: 200,
           easing: Easing.in(Easing.ease),
         });
@@ -111,6 +113,8 @@ export default function StopsScreen() {
   const [vehicleNumberFilters, setVehicleNumberFilters] = useState<string[]>([]);
   const [locationLoading, setLocationLoading] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [vehicleOrder, setVehicleOrder] = useState<string[]>([]); // Track vehicle order for this stop session
+  
 
   // Refs
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -132,26 +136,37 @@ export default function StopsScreen() {
   } = useDepartureService();
 
   // Animations
-  const filtersOpacity = useSharedValue(1);
-  const filtersTranslateX = useSharedValue(0);
+  const animationProgress = useSharedValue(0);
 
   const animatedFiltersStyle = useAnimatedStyle(() => ({
-    opacity: filtersOpacity.value,
-    transform: [{ translateX: filtersTranslateX.value }],
+    opacity: 1 - animationProgress.value,
+    transform: [{ translateX: -animationProgress.value * screenWidth }],
+  }));
+
+  const animatedDeparturesStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: animationProgress.value * screenHeight, // Slide down when focused
+      },
+    ],
+  }));
+
+  const animatedSuggestionsStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: (1 - animationProgress.value) * -200, // Slide in from top when focused
+      },
+    ],
+    opacity: animationProgress.value,
   }));
 
   useEffect(() => {
-    const duration = 300;
+    const duration = 600; // Smooth slide down animation
     const easing = Easing.inOut(Easing.ease);
-
-    if (inputFocused) {
-      filtersOpacity.value = withTiming(0, { duration: 200, easing });
-      filtersTranslateX.value = withTiming(-Dimensions.get('window').width, { duration, easing });
-    } else {
-      filtersOpacity.value = withTiming(1, { duration, easing });
-      filtersTranslateX.value = withTiming(0, { duration, easing });
-    }
-  }, [inputFocused]);
+    // Only slide back up if not focused AND there are departures to show
+    const shouldSlideDown = inputFocused || departures.length === 0;
+    animationProgress.value = withTiming(shouldSlideDown ? 1 : 0, { duration, easing });
+  }, [inputFocused, departures.length]);
 
   // Search functionality
   const handleSearch = useCallback(async (query: string) => {
@@ -337,6 +352,29 @@ export default function StopsScreen() {
     };
   }, [stopAutoRefresh]);
 
+  // Reset vehicle order when selectedStop changes (new stop session)
+  useEffect(() => {
+    setVehicleOrder([]);
+  }, [selectedStop]);
+
+  // Establish and maintain vehicle order for consistent positioning
+  useEffect(() => {
+    if (departures.length > 0) {
+      const currentVehicleKeys = departures.map(dep => `${dep.vehicleType}-${dep.number}`);
+      
+      setVehicleOrder(prevOrder => {
+        if (prevOrder.length === 0) {
+          // First time loading - establish initial order
+          return currentVehicleKeys;
+        } else {
+          // Add any new vehicles to the end, keep existing order for consistency
+          const newVehicles = currentVehicleKeys.filter(key => !prevOrder.includes(key));
+          return [...prevOrder, ...newVehicles];
+        }
+      });
+    }
+  }, [departures]);
+
   // Render functions
   const renderSuggestion = ({ item }: { item: Stop }) => (
     <TouchableOpacity
@@ -388,11 +426,7 @@ export default function StopsScreen() {
             <View
               style={[
                 styles.searchContainer,
-                {
-                  borderColor: theme.border,
-                  borderBottomLeftRadius: inputFocused && suggestions.length > 0 ? 0 : 12,
-                  borderBottomRightRadius: inputFocused && suggestions.length > 0 ? 0 : 12,
-                },
+                { borderColor: theme.border },
               ]}
             >
               <Search size={20} color={theme.textSecondary} />
@@ -417,34 +451,7 @@ export default function StopsScreen() {
               {searchLoading && <ActivityIndicator size="small" color={theme.primary} />}
             </View>
 
-            {/* Suggestions - Connected to Search Box */}
-            {inputFocused && suggestions.length > 0 && (
-              <View
-                style={[
-                  styles.suggestionsContainer,
-                  {
-                    backgroundColor: theme.surface,
-                    borderColor: theme.border,
-                    maxHeight: Math.min(
-                      300,
-                      insets.bottom + keyboardHeight > 0
-                        ? Dimensions.get('window').height - 250 - keyboardHeight
-                        : 300
-                    ),
-                  },
-                ]}
-              >
-                <FlatList
-                  data={suggestions}
-                  renderItem={renderSuggestion}
-                  keyExtractor={(item, index) => `${item.id || item.name}-${index}`}
-                  style={styles.suggestionsList}
-                  keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={false}
-                  bounces={false}
-                />
-              </View>
-            )}
+            
           </View>
 
           <TouchableOpacity
@@ -460,7 +467,35 @@ export default function StopsScreen() {
           </TouchableOpacity>
         </View>
 
-        
+        {/* Suggestions Container - Slides in from top */}
+        {inputFocused && suggestions.length > 0 && (
+          <Animated.View
+            style={[
+              styles.suggestionsContainer,
+              {
+                backgroundColor: theme.surface,
+                borderColor: theme.border,
+                maxHeight: Math.min(
+                  250,
+                  keyboardHeight > 0
+                    ? screenHeight - 200 - keyboardHeight - insets.bottom
+                    : 250
+                ),
+              },
+              animatedSuggestionsStyle,
+            ]}
+          >
+            <FlatList
+              data={suggestions}
+              renderItem={renderSuggestion}
+              keyExtractor={(item, index) => `${item.id || item.name}-${index}`}
+              style={styles.suggestionsList}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            />
+          </Animated.View>
+        )}
 
         {/* Vehicle Filters */}
         <Animated.View style={[styles.filtersSection, animatedFiltersStyle]}>
@@ -499,7 +534,7 @@ export default function StopsScreen() {
 
         {/* Departures Section */}
         {selectedStop && (
-          <View
+          <Animated.View
             style={[
               styles.departuresSection,
               {
@@ -508,6 +543,7 @@ export default function StopsScreen() {
                   : 'rgba(255, 255, 255, 0.95)',
                 shadowColor: darkMode ? '#000' : '#000',
               },
+              animatedDeparturesStyle,
             ]}
           >
             {departuresError && (
@@ -529,7 +565,22 @@ export default function StopsScreen() {
               </View>
             ) : (
               <FlatList
-                data={departures}
+                data={departures.sort((a, b) => {
+                  const aKey = `${a.vehicleType}-${a.number}`;
+                  const bKey = `${b.vehicleType}-${b.number}`;
+                  const aIndex = vehicleOrder.indexOf(aKey);
+                  const bIndex = vehicleOrder.indexOf(bKey);
+                  
+                  // If both are in the order, sort by their position
+                  if (aIndex !== -1 && bIndex !== -1) {
+                    return aIndex - bIndex;
+                  }
+                  // If only one is in the order, prioritize it
+                  if (aIndex !== -1) return -1;
+                  if (bIndex !== -1) return 1;
+                  // If neither is in the order, maintain original order
+                  return 0;
+                })}
                 renderItem={renderDeparture}
                 keyExtractor={(item) => `${item.vehicleType}-${item.number}`}
                 style={styles.departuresList}
@@ -549,7 +600,7 @@ export default function StopsScreen() {
                 }
               />
             )}
-          </View>
+          </Animated.View>
         )}
       </View>
     </SafeAreaView>
@@ -601,29 +652,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  suggestionsContainer: {
-    position: 'absolute',
-    top: 40,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    maxHeight: 300,
-    borderWidth: 1,
-    borderTopWidth: 0,
-    transform: [{ translateY: -1 }],
-  },
-  suggestionsList: {
-    flexGrow: 0,
-  },
+  
   suggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -635,6 +664,23 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontSize: 16,
     flex: 1,
+  },
+  suggestionsList: {
+    flexGrow: 0,
+  },
+  suggestionsContainer: {
+    position: 'absolute',
+    top: 150, // Just below search section
+    left: 20,
+    right: 20,
+    zIndex: 1000,
+    borderRadius: 12,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    borderWidth: 1,
   },
   filtersSection: {
     paddingHorizontal: 20,
