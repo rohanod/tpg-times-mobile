@@ -65,48 +65,77 @@ const defaultSettings = {
 } -->
 <!-- 14. Make the search autocompletions hover above the bus/tram numbers text box but under the stop name text box. -->
 <!-- 15. Make all the icons for the bus/tram numbers always be in the same place for each "stop session"(Each time viewing timings for one stop but if you go to a different stop, it's a different session and even if you go back to the same stop, it's a different session) -->
-16. Make this project use the react-native-bottom-sheet(Use context7 mcp server to find docs for it) for the bottom sheet instead of the current implementation. The current implementation is a custom bottom sheet that is not as performant and has some issues with scrolling and gestures. The new implementation will use the react-native-bottom-sheet library which is more performant and has better support for gestures and scrolling. Use tavily-search and sequential-thinking tools to help but use brave to find out how to properly implement the react native bottom sheet and if you follow implementation instructions correctly, there won't be an error. Completely redo the popups from "scratch" and don't use existing code from this codebase but you are allowed to use this library. Keep all colours and themes just migrate over to using react native bottom sheet.
+16. Make this project use the bottom-sheet-stepper(Use context7 mcp server to find docs for react-native-bottom-sheet then look at the repo attached to see the specific parts of bottom-sheet-stepper) for the bottom sheet instead of the current implementation. The current implementation is a custom bottom sheet that is not as performant and has some issues with scrolling and gestures. The new implementation will use the bottom-sheet-stepper/react-native-bottom-sheet library which is more performant and has better support for gestures and scrolling. Use tavily-search and sequential-thinking tools to help but use brave to find out how to properly implement this and if you follow implementation instructions correctly, there won't be an error. Completely redo the popups from "scratch" and don't use existing code from this codebase but you are allowed to use this library. Keep all colours and themes just migrate over to using bottom sheet stepper/react-native-bottom-sheet.
 Keep all the same colours and themes
-Use the context7 mcp server to check docs for react native bottom sheet and expo if needed
+Use the context7 mcp server to check docs for react native bottom sheet and expo if needed. Read the repo attached to find out about bottom-sheet-stepper and look at the example folder in it for more help.
+Here are the github repos for the things. Clone them and analyse them:
+https://github.com/mahdidavoodi7/bottom-sheet-stepper
+https://github.com/gorhom/react-native-bottom-sheet
 
-17. Make the cells have a yellow background colour when there is a delay of any time
+<!-- 17. Make the cells have a yellow background colour when there is a delay of any time -->
 18. Right now, I think when the time format is minutes, it calculates the delays but doesn't show a warning but if the time format is 24 hour time, it doesn't calculate the delays and doesn't show the warnings
-19. When exiting the text box, it should clear the autocompletions
-21. Make it update the timings every time one of the circle buttons are pressed if it has been more than 6 seconds since the last update/press on circle button
-22. The tab names don't change language when I switch language
-23. If the bus/tram circle background is black, make it have a white outline 
-24. Make the container with the timings fill the screen but leave space for the other elements and the tabs
-25. Add a favourites stop feature where if the user has a currently selected stop in the home page, the favourites menu will have a "Add this stop to favourites" button and once clicked on, will add the stop to favourites and if there are any filters, it will save them too. Once clicked on a favourite, it will go back to main page with stop name and bus/tram number(if applicable) filled out and make sure there is a delete button to remove a favourite
+<!-- 19. When exiting the text box, it should clear the autocompletions -->
+<!-- 21. Make it update the timings every time one of the circle buttons are pressed if it has been more than 6 seconds since the last update/press on circle button -->
+<!-- 22. The tab names don't change language when I switch language -->
+<!-- 23. Don't have the white outline for the bus/tram number items -->
+24. Make the container with the bus/tram number items fill the screen but leave space for the other elements and the tabs
+25. Add a favourites stop feature where if the user has a currently selected stop in the home page, the favourites menu will have a "Add this stop to favourites" button and once clicked on, will add the stop to favourites and if there are any filters, it will save them too. Once clicked on a favourite, it will go back to main page with stop name and bus/tram number(if applicable) filled out and make sure there is a delete button to remove a favourite. Use context7 to look through the expo docs to find expo-sqlite so that we can have it save favourites. This is python code for you to get an idea of what tool calls you should make:
+
+id = resolve-library-name(libraryName="expo")
+get-library-docs(context7CompatibleLibraryID=id, topic="sqlite")
 26. Refresh arrets.csv every month but have an option to refresh manually in settings
-27. Implement a widget where the user can choose any stop with free text input and optional number filter and it will show the timings for that stop in the widget. Here is the git repo with an example of doing cross platform widgets: https://github.com/ImBIOS/RNWidget you can clone it to see how they do it
-28. 
+27. Implement a widget where the user can choose any stop with free text input and optional number filter and it will show the timings for that stop in the widget. In the repo, there is a README.md and an example folder. This is the url for the repo. Clone it and analyse it: https://github.com/EvanBacon/expo-apple-widget-example
+28. If the background for the bus circles are black in dark mode, add a white border but if it is white in light mode, add black border and for ones that have no colour(~~ in colour field), just have white background with black border and black text
 29. Make the splash screen the animated assets/images/loading.svg
 30. If there are multiple stops with the same name, just show it once
-31. The API gives this response:
-
-{
-	"time": "2021-02-08 13:59:00",
-	"*G": "S",
-	"*L": "13",
-	"*Z": "019351",
-	"type": "strain",
-	"line": "S13",
-	"operator": "SOB-sob",
-	"color": "039~fff~",
-	"type_name": "S-Bahn",
-	"terminal": {
-		"id": "8503206",
-		"name": "Wädenswil",
-		"x": 693645,
-		"y": 231669,
-		"lon": 8.675218,
-		"lat": 47.229306
-	}
-},
-
-in color, first part is the hex code for the background colour and the second part is the hex code for the text colour(And border in our case)
+31. Add url parameters for stop name and bus/tram number filters
 32. Make the border for the stop name box border, bus/tram number box border, suggestions container and individual suggestions border these colours: borderColor: darkMode ? '#333333' : '#DDDDDD'
+33. Make sure there is deduplication so if the name is exactly the same, it should only show once
+34. The suggestions don't appear fast enough.
+35. Network requests fail too often and it sometimes doesn't even try. It also should show timings immediately after the done button is pressed.
+36. When clicking on an autosuggestion, it should fill in text box and exit text box
+37. Only allow scrolling if there are more than 12 bus/tram numbers
+38. Is it possible to not have the phone's default dictionary for suggestions and add a custom list of suggestions? If so, let's do it.
+39. Make it so the vehiclesContainer has a inverse rounded corner so that it's shape is the negative of the bus/tram number input's shape so that the circles for bus/tram numbers get cut off in a way that makes it looks like there isn't a container and they are just disappearing behind the bus/tram number input.
+40. The first time I try to type a stop and wait for suggestions, it says no stops found but if I change it(Even just removing last character and re-adding it), it works. Make it so it works the first time.
+41. Sometimes it "goes crazy" and just makes a lot of requests really quickly(About 150 in 5 seconds) and logs a lot of things to the console. Make it so it doesn't make too many requests.
+41. Migrate to using icons from expo/vector icons: https://docs.expo.dev/guides/icons/
+Bus at /app/(tabs)/_layout.tsx:
+```ts
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+<MaterialIcons name="directions-bus" size={24} color="black" />
+```
 
+Settings at /app/(tabs)/_layout.tsx:
+```ts
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+<MaterialIcons name="settings" size={24} color="black" />
+```
+
+MapPin at /app/(tabs)/index.tsx:
+```ts
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+<MaterialIcons name="location-pin" size={24} color="black" />
+```
+
+Search at /app/(tabs)/index.tsx:
+```ts
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+<MaterialIcons name="search" size={24} color="black" />
+```
+
+X at /app/(tabs)/index.tsx:
+```ts
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+<MaterialIcons name="close" size={24} color="black" />
+```
+
+Plus at /app/(tabs)/index.tsx:
+```ts
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+<MaterialIcons name="add" size={24} color="black" />
+```
+42. 
 
 # LAST:
 - Make sure it is accessible

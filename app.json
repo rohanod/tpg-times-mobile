@@ -43,6 +43,17 @@
         {
           "locationWhenInUsePermission": "${PRODUCT_NAME} needs to access your location to show you nearby stops"
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "newArchEnabled": true
+          },
+          "android": {
+            "newArchEnabled": true
+          }
+        }
       ]
     ],
     "experiments": {
@@ -59,8 +70,8 @@
     "android": {
       "package": "com.rohanodwyer.tpgtimes",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
-        "monochromeImage": "./assets/images/icon.png"
+        "foregroundImage": "./assets/images/ios-light.png",
+        "monochromeImage": "./assets/images/ios-dark.png"
       }
     },
     "runtimeVersion": {
