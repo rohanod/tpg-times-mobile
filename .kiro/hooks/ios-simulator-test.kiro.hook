@@ -1,0 +1,45 @@
+{
+  "name": "iOS Simulator Auto-Test",
+  "description": "Automatically test app updates using iOS Simulator MCP tools whenever source files are modified",
+  "version": "1.0.0",
+  "trigger": {
+    "type": "file_save",
+    "patterns": [
+      "app/**/*.{ts,tsx,js,jsx}",
+      "components/**/*.{ts,tsx,js,jsx}",
+      "services/**/*.{ts,tsx,js,jsx}",
+      "hooks/**/*.{ts,tsx,js,jsx}",
+      "config/**/*.{ts,tsx,js,jsx}",
+      "utils/**/*.{ts,tsx,js,jsx}"
+    ],
+    "exclude": [
+      "node_modules/**",
+      "ios/build/**",
+      "android/build/**",
+      ".expo/**",
+      "dist/**"
+    ]
+  },
+  "action": {
+    "type": "agent_execution",
+    "request": "Test the app update using iOS Simulator MCP tools. Follow these steps:\n\n1. Get the booted iOS simulator ID using `mcp_ios_simulator_mcp_get_booted_sim_id`\n2. Take a screenshot using `mcp_ios_simulator_mcp_screenshot` to capture the current app state\n3. Describe the entire UI using `mcp_ios_simulator_mcp_ui_describe_all` to understand what's displayed\n4. Look for any obvious errors, crashes, or UI issues\n5. If the app appears to be working correctly, briefly test basic functionality by:\n   - Describing key UI elements to ensure they're present\n   - Checking if the app is responsive and not frozen\n6. Report your findings:\n   - If everything looks good, provide a brief confirmation\n   - If there are issues, describe them clearly with suggestions for fixes\n   - Include the screenshot path for reference\n\nContext: This hook was triggered because source files were modified. The goal is to quickly verify that the changes didn't break the app's basic functionality.",
+    "timeout": 60000,
+    "auto_approve_tools": [
+      "mcp_ios_simulator_mcp_get_booted_sim_id",
+      "mcp_ios_simulator_mcp_screenshot",
+      "mcp_ios_simulator_mcp_ui_describe_all",
+      "mcp_ios_simulator_mcp_ui_describe_point",
+      "mcp_ios_simulator_mcp_ui_view",
+      "mcp_ios_simulator_mcp_ui_tap",
+      "mcp_ios_simulator_mcp_ui_type",
+      "mcp_ios_simulator_mcp_ui_swipe",
+      "mcp_ios_simulator_mcp_record_video",
+      "mcp_ios_simulator_mcp_stop_recording"
+    ]
+  },
+  "settings": {
+    "debounce_ms": 2000,
+    "max_executions_per_minute": 3,
+    "enabled": true
+  }
+}

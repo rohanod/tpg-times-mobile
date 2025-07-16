@@ -11,6 +11,7 @@ import {
   Alert,
   Dimensions,
   TouchableWithoutFeedback,
+  Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapPin, Search, X, Plus } from 'lucide-react-native';
@@ -23,7 +24,7 @@ import Animated, {
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
-import { useKeyboardHandler } from 'react-native-keyboard-controller';
+import { useKeyboardHandler, KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
 import { useSettings } from '../../hooks/useSettings';
 import { useArretsCsv } from '../../hooks/useArretsCsv';
@@ -34,23 +35,7 @@ import { getThemeColors } from '../../config/theme';
 import DepartureService, { type Stop, type GroupedDeparture } from '../../services/DepartureService';
 import LocationService from '../../services/LocationService';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window'); 
-
-// Custom hook for accurate keyboard height detection
-const useKeyboardHeight = () => {
-  const height = useSharedValue(0);
-
-  useKeyboardHandler(
-    {
-      onMove: event => {
-        'worklet';
-        height.value = Math.max(event.height, 0);
-      },
-    },
-    []
-  );
-  return height;
-};
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const AnimatedDepartureItem = React.memo(
   ({ item, index, isVisible, language, timeFormat, darkMode, theme }) => {
@@ -62,22 +47,26 @@ const AnimatedDepartureItem = React.memo(
       transform: [{ translateX: translateX.value }],
     }));
 
-    useEffect(() => {
-      const delay = index * 50;
-      const duration = 300;
-      const easing = Easing.out(Easing.exp);
+    // React to changes in the shared value
+    useAnimatedReaction(
+      () => isVisible.value,
+      (visible) => {
+        const delay = index * 50;
+        const duration = 300;
+        const easing = Easing.out(Easing.exp);
 
-      if (isVisible) {
-        opacity.value = withDelay(delay, withTiming(1, { duration, easing }));
-        translateX.value = withDelay(delay, withTiming(0, { duration, easing }));
-      } else {
-        opacity.value = withTiming(0, { duration: 200, easing: Easing.in(Easing.ease) });
-        translateX.value = withTiming(screenWidth, {
-          duration: 200,
-          easing: Easing.in(Easing.ease),
-        });
+        if (visible) {
+          opacity.value = withDelay(delay, withTiming(1, { duration, easing }));
+          translateX.value = withDelay(delay, withTiming(0, { duration, easing }));
+        } else {
+          opacity.value = withTiming(0, { duration: 200, easing: Easing.in(Easing.ease) });
+          translateX.value = withTiming(screenWidth, {
+            duration: 200,
+            easing: Easing.in(Easing.ease),
+          });
+        }
       }
-    }, [isVisible, index]);
+    );
 
     return (
       <Animated.View style={[styles.departureItem, { borderColor: theme.border }, animatedStyle]}>
@@ -131,9 +120,7 @@ export default function StopsScreen() {
   const [vehicleNumberInput, setVehicleNumberInput] = useState('');
   const [vehicleNumberFilters, setVehicleNumberFilters] = useState<string[]>([]);
   const [locationLoading, setLocationLoading] = useState(false);
-  const keyboardHeight = useKeyboardHeight(); // Use the new accurate keyboard height hook
   const [vehicleOrder, setVehicleOrder] = useState<string[]>([]); // Track vehicle order for this stop session
-  const [keyboardHeightDisplay, setKeyboardHeightDisplay] = useState(0); // For debug display
   
 
   // Refs
@@ -159,6 +146,7 @@ export default function StopsScreen() {
   const animationProgress = useSharedValue(0);
   const searchEntranceProgress = useSharedValue(0);
   const filtersEntranceProgress = useSharedValue(0);
+  const departureCardsVisible = useSharedValue(true);
 
   const animatedSearchEntranceStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: (1 - searchEntranceProgress.value) * screenWidth }], // Slide in from right
@@ -193,12 +181,7 @@ export default function StopsScreen() {
   }));
 
   // Sync keyboard height shared value with state for debug display
-  useAnimatedReaction(
-    () => keyboardHeight.value,
-    (currentValue) => {
-      runOnJS(setKeyboardHeightDisplay)(Math.round(currentValue));
-    }
-  );
+
 
   // Entrance animations on mount
   useEffect(() => {
@@ -213,12 +196,32 @@ export default function StopsScreen() {
   }, []);
 
   useEffect(() => {
-    const duration = 600; // Smooth slide down animation
-    const easing = Easing.inOut(Easing.ease);
-    // Only slide down if in stop name input mode (not when no departures on launch)
     const shouldSlideDown = inputFocused;
-    animationProgress.value = withTiming(shouldSlideDown ? 1 : 0, { duration, easing });
-  }, [inputFocused]);
+    
+    if (shouldSlideDown) {
+      // First hide departure cards
+      departureCardsVisible.value = false;
+      
+      // Calculate delay based on number of departure cards
+      const maxCardDelay = departures.length > 0 ? (departures.length - 1) * 50 + 300 : 0;
+      const borderDelay = maxCardDelay + 100; // Extra 100ms buffer
+      
+      // Then slide down the border after cards finish animating out
+      animationProgress.value = withDelay(borderDelay, withTiming(1, { 
+        duration: 600, 
+        easing: Easing.inOut(Easing.ease) 
+      }));
+    } else {
+      // When coming back, slide border up first, then show cards
+      animationProgress.value = withTiming(0, { 
+        duration: 600, 
+        easing: Easing.inOut(Easing.ease) 
+      });
+      
+      // Show cards after border finishes sliding up
+      departureCardsVisible.value = withDelay(600, withTiming(1, { duration: 0 }));
+    }
+  }, [inputFocused, departures.length]);
 
   // Search functionality
   const handleSearch = useCallback(async (query: string) => {
@@ -441,7 +444,7 @@ export default function StopsScreen() {
     <AnimatedDepartureItem
       item={item}
       index={index}
-      isVisible={!inputFocused}
+      isVisible={departureCardsVisible}
       language={language}
       timeFormat={timeFormat}
       darkMode={darkMode}
@@ -450,7 +453,11 @@ export default function StopsScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={{ flex: 1 }}>
         {/* Header */}
         <View style={[styles.header, { paddingTop: insets.top }]}>
@@ -470,6 +477,8 @@ export default function StopsScreen() {
             >
               <Search size={20} color={theme.textSecondary} />
               <TextInput
+                autoComplete="off"
+                autoCorrect={false}
                 style={[styles.searchInput, { color: theme.text }]}
                 placeholder={
                   language === 'en' ? 'Search for a stop...' : 'Rechercher un arrêt...'
@@ -514,7 +523,7 @@ export default function StopsScreen() {
               {
                 backgroundColor: theme.surface,
                 borderColor: theme.border,
-                maxHeight: 250, // Fixed height for now until keyboard controller is properly set up
+                maxHeight: 250,
               },
               animatedSuggestionsStyle,
             ]}
@@ -530,41 +539,6 @@ export default function StopsScreen() {
             />
           </Animated.View>
         )}
-
-        {/* Debug: Keyboard Position Line - 5px above keyboard */}
-        <Animated.View
-          style={useAnimatedStyle(() => ({
-            position: 'absolute',
-            bottom: keyboardHeight.value + 5, // 5px above keyboard
-            left: 0,
-            right: 0,
-            height: 2,
-            backgroundColor: 'red',
-            zIndex: 9999,
-            opacity: keyboardHeight.value > 0 ? 1 : 0,
-          }))}
-        />
-        
-        {/* Debug: Show keyboard height value */}
-        <Animated.View
-          style={useAnimatedStyle(() => ({
-            position: 'absolute',
-            top: 50,
-            right: 20,
-            backgroundColor: 'black',
-            padding: 8,
-            borderRadius: 4,
-            zIndex: 9999,
-            opacity: keyboardHeight.value > 0 ? 1 : 0,
-          }))}
-        >
-          <Text style={{ color: 'white', fontSize: 12 }}>
-            KB: {keyboardHeightDisplay}px
-          </Text>
-          <Text style={{ color: 'white', fontSize: 12 }}>
-            Insets: {insets.bottom}px
-          </Text>
-        </Animated.View>
 
         {/* Vehicle Filters */}
         <Animated.View style={[styles.filtersSection, animatedFiltersStyle, animatedFiltersEntranceStyle]}>
@@ -673,6 +647,7 @@ export default function StopsScreen() {
         )}
       </View>
     </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
