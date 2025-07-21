@@ -51,17 +51,19 @@ const AnimatedDepartureItem = React.memo(
     useAnimatedReaction(
       () => isVisible.value,
       (visible) => {
-        const delay = index * 50;
+        const delay = index * 80;
         const duration = 300;
         const easing = Easing.out(Easing.exp);
 
         if (visible) {
+          // Arrival: staggered delay for smooth entrance
           opacity.value = withDelay(delay, withTiming(1, { duration, easing }));
           translateX.value = withDelay(delay, withTiming(0, { duration, easing }));
         } else {
-          opacity.value = withTiming(0, { duration: 200, easing: Easing.in(Easing.ease) });
+          // Departure: no delay - all cards slide out simultaneously
+          opacity.value = withTiming(0, { duration: 100, easing: Easing.in(Easing.ease) });
           translateX.value = withTiming(screenWidth, {
-            duration: 200,
+            duration: 100,
             easing: Easing.in(Easing.ease),
           });
         }
@@ -121,7 +123,7 @@ export default function StopsScreen() {
   const [vehicleNumberFilters, setVehicleNumberFilters] = useState<string[]>([]);
   const [locationLoading, setLocationLoading] = useState(false);
   const [vehicleOrder, setVehicleOrder] = useState<string[]>([]); // Track vehicle order for this stop session
-  
+
 
   // Refs
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -147,6 +149,8 @@ export default function StopsScreen() {
   const searchEntranceProgress = useSharedValue(0);
   const filtersEntranceProgress = useSharedValue(0);
   const departureCardsVisible = useSharedValue(true);
+
+
 
   const animatedSearchEntranceStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: (1 - searchEntranceProgress.value) * screenWidth }], // Slide in from right
@@ -180,44 +184,42 @@ export default function StopsScreen() {
     opacity: animationProgress.value,
   }));
 
-  // Sync keyboard height shared value with state for debug display
-
 
   // Entrance animations on mount
   useEffect(() => {
     const duration = 800;
     const easing = Easing.out(Easing.exp);
-    
+
     // Search slides in from right with delay
     searchEntranceProgress.value = withDelay(200, withTiming(1, { duration, easing }));
-    
+
     // Filters slide in from left with delay
     filtersEntranceProgress.value = withDelay(400, withTiming(1, { duration, easing }));
   }, []);
 
   useEffect(() => {
     const shouldSlideDown = inputFocused;
-    
+
     if (shouldSlideDown) {
       // First hide departure cards
       departureCardsVisible.value = false;
-      
+
       // Calculate delay based on number of departure cards
       const maxCardDelay = departures.length > 0 ? (departures.length - 1) * 50 + 300 : 0;
       const borderDelay = maxCardDelay + 100; // Extra 100ms buffer
-      
+
       // Then slide down the border after cards finish animating out
-      animationProgress.value = withDelay(borderDelay, withTiming(1, { 
-        duration: 600, 
-        easing: Easing.inOut(Easing.ease) 
+      animationProgress.value = withDelay(borderDelay, withTiming(1, {
+        duration: 600,
+        easing: Easing.inOut(Easing.ease)
       }));
     } else {
       // When coming back, slide border up first, then show cards
-      animationProgress.value = withTiming(0, { 
-        duration: 600, 
-        easing: Easing.inOut(Easing.ease) 
+      animationProgress.value = withTiming(0, {
+        duration: 600,
+        easing: Easing.inOut(Easing.ease)
       });
-      
+
       // Show cards after border finishes sliding up
       departureCardsVisible.value = withDelay(600, withTiming(1, { duration: 0 }));
     }
@@ -403,7 +405,7 @@ export default function StopsScreen() {
   useEffect(() => {
     if (departures.length > 0) {
       const currentVehicleKeys = departures.map(dep => `${dep.vehicleType}-${dep.number}`);
-      
+
       setVehicleOrder(prevOrder => {
         if (prevOrder.length === 0) {
           // First time loading - establish initial order
@@ -458,195 +460,200 @@ export default function StopsScreen() {
       style={{ flex: 1 }}
     >
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={{ flex: 1 }}>
-        {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top }]}>
-          <Text style={[styles.title, { color: theme.text }]}>
-            {language === 'en' ? 'TPG Times' : 'Horaires TPG'}
-          </Text>
-        </View>
+        <View style={{ flex: 1 }}>
+          {/* Header */}
+          <View style={[styles.header, { paddingTop: insets.top }]}>
+            <Text style={[styles.title, { color: theme.text }]}>
+              {language === 'en' ? 'TPG Times' : 'Horaires TPG'}
+            </Text>
+          </View>
 
-        {/* Search Section */}
-        <Animated.View style={[styles.searchSection, animatedSearchEntranceStyle]}>
-          <View style={styles.searchWrapper}>
-            <View
-              style={[
-                styles.searchContainer,
-                { borderColor: theme.border },
-              ]}
-            >
-              <Search size={20} color={theme.textSecondary} />
-              <TextInput
-                autoComplete="off"
-                autoCorrect={false}
-                style={[styles.searchInput, { color: theme.text }]}
-                placeholder={
-                  language === 'en' ? 'Search for a stop...' : 'Rechercher un arrêt...'
-                }
-                placeholderTextColor={theme.textSecondary}
-                value={searchQuery}
-                onChangeText={onSearchChange}
-                onFocus={() => setInputFocused(true)}
-                onBlur={() => setInputFocused(false)}
-                returnKeyType="done"
-                onSubmitEditing={Keyboard.dismiss}
-              />
-              {searchQuery.length > 0 && !searchLoading && (
-                <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-                  <X size={18} color={theme.textSecondary} />
-                </TouchableOpacity>
-              )}
-              {searchLoading && <ActivityIndicator size="small" color={theme.primary} />}
+          {/* Search Section */}
+          <Animated.View style={[styles.searchSection, animatedSearchEntranceStyle]}>
+            <View style={styles.searchWrapper}>
+              <View
+                style={[
+                  styles.searchContainer,
+                  { borderColor: theme.border },
+                ]}
+              >
+                <Search size={20} color={theme.textSecondary} />
+                <TextInput
+                  autoComplete="off"
+                  autoCorrect={false}
+                  style={[styles.searchInput, { color: theme.text }]}
+                  placeholder={
+                    language === 'en' ? 'Search for a stop...' : 'Rechercher un arrêt...'
+                  }
+                  placeholderTextColor={theme.textSecondary}
+                  value={searchQuery}
+                  onChangeText={onSearchChange}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
+                />
+                {searchQuery.length > 0 && !searchLoading && (
+                  <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+                    <X size={18} color={theme.textSecondary} />
+                  </TouchableOpacity>
+                )}
+                {searchLoading && <ActivityIndicator size="small" color={theme.primary} />}
+              </View>
+
+
             </View>
 
-            
-          </View>
-
-          <TouchableOpacity
-            style={[styles.locationButton, { backgroundColor: theme.primary }]}
-            onPress={findNearestStopLocation}
-            disabled={locationLoading}
-          >
-            {locationLoading ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <MapPin size={20} color="white" />
-            )}
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Suggestions Container - Slides in from top */}
-        {inputFocused && suggestions.length > 0 && (
-          <Animated.View
-            style={[
-              styles.suggestionsContainer,
-              {
-                backgroundColor: theme.surface,
-                borderColor: theme.border,
-                maxHeight: 250,
-              },
-              animatedSuggestionsStyle,
-            ]}
-          >
-            <FlatList
-              data={suggestions}
-              renderItem={renderSuggestion}
-              keyExtractor={(item, index) => `${item.id || item.name}-${index}`}
-              style={styles.suggestionsList}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-              bounces={false}
-            />
-          </Animated.View>
-        )}
-
-        {/* Vehicle Filters */}
-        <Animated.View style={[styles.filtersSection, animatedFiltersStyle, animatedFiltersEntranceStyle]}>
-          <View style={[styles.filterInputContainer, { borderColor: theme.border }]}>
-            <TextInput
-              style={[styles.filterInput, { color: theme.text }]}
-              placeholder={
-                language === 'en' ? 'Filter by vehicle number...' : 'Filtrer par numéro...'
-              }
-              placeholderTextColor={theme.textSecondary}
-              value={vehicleNumberInput}
-              onChangeText={setVehicleNumberInput}
-              onSubmitEditing={addVehicleNumberFilter}
-              returnKeyType="done"
-              keyboardType="number-pad"
-            />
             <TouchableOpacity
-              style={[styles.addFilterButton, { backgroundColor: theme.primary }]}
-              onPress={addVehicleNumberFilter}
+              style={[styles.locationButton, { backgroundColor: theme.primary }]}
+              onPress={findNearestStopLocation}
+              disabled={locationLoading}
             >
-              <Plus size={16} color="white" />
+              {locationLoading ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <MapPin size={20} color="white" />
+              )}
             </TouchableOpacity>
-          </View>
+          </Animated.View>
 
-          {vehicleNumberFilters.length > 0 && (
-            <FlatList
-              data={vehicleNumberFilters}
-              renderItem={renderVehicleFilter}
-              keyExtractor={(item) => item}
-              horizontal
-              style={styles.filtersRow}
-              showsVerticalScrollIndicator={false}
-            />
-          )}
-        </Animated.View>
-
-        {/* Departures Section */}
-        {selectedStop && (
-          <Animated.View
-            style={[
-              styles.departuresSection,
-              {
-                backgroundColor: darkMode
-                  ? 'rgba(28, 28, 30, 0.95)'
-                  : 'rgba(255, 255, 255, 0.95)',
-                shadowColor: darkMode ? '#000' : '#000',
-              },
-              animatedDeparturesStyle,
-            ]}
-          >
-            {departuresError && (
-              <View style={[styles.errorContainer, { backgroundColor: theme.surface }]}>
-                <Text style={[styles.errorText, { color: '#FF3B30' }]}>
-                  {departuresError}
-                </Text>
-              </View>
-            )}
-
-            {departuresLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={theme.primary} />
-                <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
-                  {language === 'en'
-                    ? 'Loading departures...'
-                    : 'Chargement des départs...'}
-                </Text>
-              </View>
-            ) : (
+          {/* Suggestions Container - Slides in from top */}
+          {inputFocused && suggestions.length > 0 && (
+            <Animated.View
+              style={[
+                styles.suggestionsContainer,
+                {
+                  backgroundColor: theme.surface,
+                  borderColor: theme.border,
+                  maxHeight: 250,
+                },
+                animatedSuggestionsStyle,
+              ]}
+            >
               <FlatList
-                data={departures.sort((a, b) => {
-                  const aKey = `${a.vehicleType}-${a.number}`;
-                  const bKey = `${b.vehicleType}-${b.number}`;
-                  const aIndex = vehicleOrder.indexOf(aKey);
-                  const bIndex = vehicleOrder.indexOf(bKey);
-                  
-                  // If both are in the order, sort by their position
-                  if (aIndex !== -1 && bIndex !== -1) {
-                    return aIndex - bIndex;
-                  }
-                  // If only one is in the order, prioritize it
-                  if (aIndex !== -1) return -1;
-                  if (bIndex !== -1) return 1;
-                  // If neither is in the order, maintain original order
-                  return 0;
-                })}
-                renderItem={renderDeparture}
-                keyExtractor={(item) => `${item.vehicleType}-${item.number}`}
-                style={styles.departuresList}
+                data={suggestions}
+                renderItem={renderSuggestion}
+                keyExtractor={(item, index) => `${item.id || item.name}-${index}`}
+                style={styles.suggestionsList}
+                keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
-                refreshing={refreshing}
-                onRefresh={handleManualRefresh}
-                keyboardDismissMode="on-drag"
-                ListHeaderComponent={<View style={{ height: 16 }} />}
-                ListEmptyComponent={
-                  <View style={styles.emptyContainer}>
-                    <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                      {language === 'en'
-                        ? 'No departures found'
-                        : 'Aucun départ trouvé'}
-                    </Text>
-                  </View>
+                bounces={false}
+              />
+            </Animated.View>
+          )}
+
+          {/* Vehicle Filters */}
+          <Animated.View style={[styles.filtersSection, animatedFiltersStyle, animatedFiltersEntranceStyle]}>
+            <View style={[styles.filterInputContainer, { borderColor: theme.border }]}>
+              <TextInput
+                style={[styles.filterInput, { color: theme.text }]}
+                placeholder={
+                  language === 'en' ? 'Filter by vehicle number...' : 'Filtrer par numéro...'
                 }
+                placeholderTextColor={theme.textSecondary}
+                value={vehicleNumberInput}
+                onChangeText={setVehicleNumberInput}
+                onSubmitEditing={addVehicleNumberFilter}
+                returnKeyType="done"
+                keyboardType="number-pad"
+              />
+              <TouchableOpacity
+                style={[styles.addFilterButton, { backgroundColor: theme.primary }]}
+                onPress={addVehicleNumberFilter}
+              >
+                <Plus size={16} color="white" />
+              </TouchableOpacity>
+            </View>
+
+            {vehicleNumberFilters.length > 0 && (
+              <FlatList
+                data={vehicleNumberFilters}
+                renderItem={renderVehicleFilter}
+                keyExtractor={(item) => item}
+                horizontal
+                style={styles.filtersRow}
+                showsVerticalScrollIndicator={false}
               />
             )}
           </Animated.View>
-        )}
-      </View>
-    </SafeAreaView>
+
+          {/* Departures Section */}
+          {selectedStop && (
+            <Animated.View
+              style={[
+                styles.departuresSection,
+                {
+                  backgroundColor: darkMode
+                    ? 'rgba(28, 28, 30, 0.95)'
+                    : 'rgba(255, 255, 255, 0.95)',
+                  shadowColor: darkMode ? '#000' : '#000',
+                },
+                animatedDeparturesStyle,
+              ]}
+            >
+              {departuresError && (
+                <View style={[styles.errorContainer, { backgroundColor: theme.surface }]}>
+                  <Text style={[styles.errorText, { color: '#FF3B30' }]}>
+                    {departuresError}
+                  </Text>
+                </View>
+              )}
+
+              {departuresLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={theme.primary} />
+                  <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+                    {language === 'en'
+                      ? 'Loading departures...'
+                      : 'Chargement des départs...'}
+                  </Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={departures.sort((a, b) => {
+                    const aKey = `${a.vehicleType}-${a.number}`;
+                    const bKey = `${b.vehicleType}-${b.number}`;
+                    const aIndex = vehicleOrder.indexOf(aKey);
+                    const bIndex = vehicleOrder.indexOf(bKey);
+
+                    // If both are in the order, sort by their position
+                    if (aIndex !== -1 && bIndex !== -1) {
+                      return aIndex - bIndex;
+                    }
+                    // If only one is in the order, prioritize it
+                    if (aIndex !== -1) return -1;
+                    if (bIndex !== -1) return 1;
+                    // If neither is in the order, maintain original order
+                    return 0;
+                  })}
+                  renderItem={renderDeparture}
+                  keyExtractor={(item) => `${item.vehicleType}-${item.number}`}
+                  style={styles.departuresList}
+                  showsVerticalScrollIndicator={false}
+                  refreshing={refreshing}
+                  onRefresh={handleManualRefresh}
+                  keyboardDismissMode="on-drag"
+                  ListHeaderComponent={<View style={{ height: 16 }} />}
+                  ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                      <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                        {language === 'en'
+                          ? 'No departures found'
+                          : 'Aucun départ trouvé'}
+                      </Text>
+                    </View>
+                  }
+                />
+              )}
+            </Animated.View>
+          )}
+
+        </View>
+
+
+      </SafeAreaView>
+
+
     </KeyboardAvoidingView>
   );
 }
@@ -696,7 +703,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
+
   suggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -780,6 +787,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 20,
     marginTop: 0,
+    marginBottom: 5, // Reduced bottom margin to extend closer to tab bar
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 16,
     shadowColor: '#000',
