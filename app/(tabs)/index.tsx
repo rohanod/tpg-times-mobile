@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -24,7 +25,6 @@ import Animated, {
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
-import { useKeyboardHandler, KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
 import { useSettings } from '../../hooks/useSettings';
 import { useArretsCsv } from '../../hooks/useArretsCsv';
@@ -36,6 +36,9 @@ import DepartureService, { type Stop, type GroupedDeparture } from '../../servic
 import LocationService from '../../services/LocationService';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+// Create Animated component for the departures overlay
+const DeparturesAnimated = Animated.createAnimatedComponent(View);
 
 const AnimatedDepartureItem = React.memo(
   ({ item, index, isVisible, language, timeFormat, darkMode, theme }) => {
@@ -125,6 +128,14 @@ export default function StopsScreen() {
   const [vehicleOrder, setVehicleOrder] = useState<string[]>([]); // Track vehicle order for this stop session
 
 
+// Animated Values
+  const wrapperTranslateY = useSharedValue(0);
+
+  // Animation styles for the wrapper container
+  const animatedWrapperStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: wrapperTranslateY.value }],
+  }));
+
   // Refs
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const departureService = useRef(DepartureService.getInstance());
@@ -143,6 +154,22 @@ export default function StopsScreen() {
     stopAutoRefresh,
     manualRefresh,
   } = useDepartureService();
+
+// Keyboard and Focus Listeners
+  useFocusEffect(
+    React.useCallback(() => {
+      const onKeyboardShow = () => setInputFocused(true);
+      const onKeyboardHide = () => setInputFocused(false);
+
+      const showSubscription = Keyboard.addListener('keyboardDidShow', onKeyboardShow);
+      const hideSubscription = Keyboard.addListener('keyboardDidHide', onKeyboardHide);
+
+      return () => {
+        showSubscription.remove();
+        hideSubscription.remove();
+      };
+    }, [])
+  );
 
   // Animations
   const animationProgress = useSharedValue(0);
@@ -455,10 +482,7 @@ export default function StopsScreen() {
   );
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
-    >
+<View style={{ flex: 1 }}>
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={{ flex: 1 }}>
           {/* Header */}
@@ -579,9 +603,9 @@ export default function StopsScreen() {
 
           {/* Departures Section */}
           {selectedStop && (
-            <Animated.View
+            <DeparturesAnimated
               style={[
-                styles.departuresSection,
+                styles.departuresOverlay,
                 {
                   backgroundColor: darkMode
                     ? 'rgba(28, 28, 30, 0.95)'
@@ -645,7 +669,7 @@ export default function StopsScreen() {
                   }
                 />
               )}
-            </Animated.View>
+            </DeparturesAnimated>
           )}
 
         </View>
@@ -654,7 +678,7 @@ export default function StopsScreen() {
       </SafeAreaView>
 
 
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -788,6 +812,24 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 0,
     marginBottom: 5, // Reduced bottom margin to extend closer to tab bar
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    paddingHorizontal: 16,
+  },
+  departuresOverlay: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    bottom: 5, // Match the marginBottom from departuresSection
+    top: 250, // Approximate top position to maintain existing layout
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 16,
     shadowColor: '#000',
