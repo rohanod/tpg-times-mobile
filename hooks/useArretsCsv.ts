@@ -112,20 +112,9 @@ export const useArretsCsv = () => {
       return arret.active && (lowerStopName.includes(arretName) || arretName.includes(lowerStopName));
     });
     
-    const initialName = match ? match.fullName : stopName;
-    
-    try {
-      const locationsResponse = await fetch(`${API_ENDPOINTS.LOCATIONS}?query=${encodeURIComponent(initialName)}&type=station`);
-      const locationsData = await locationsResponse.json();
-      
-      if (locationsData && locationsData.stations && locationsData.stations.length > 0) {
-        return locationsData.stations[0].name || initialName;
-      }
-    } catch {
-      console.error('Error getting formatted stop name:');
-    }
-    
-    return initialName;
+    // Return the matched stop's raw name - no external API calls
+    // Rely on search.ch stationboard response for proper name formatting
+    return match ? match.name : stopName;
   };
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {

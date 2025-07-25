@@ -300,15 +300,18 @@ export default function StopsScreen() {
       setSuggestions([]);
       setInputFocused(false);
       Keyboard.dismiss();
+      // Clear search query initially - it will be set to formattedStopName when it comes back
+      setSearchQuery('');
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
         searchTimeoutRef.current = null;
       }
       try {
-        await fetchDepartures(stop, vehicleNumberFilters);
+        // First fetch departures, then start auto-refresh
+        await fetchDepartures(stop, vehicleNumberFilters); // stop now contains id
         startAutoRefresh(stop, vehicleNumberFilters);
       } catch (error) {
-        console.error('Error fetching departures:', error);
+        console.error('Error fetching departures or starting auto-refresh:', error);
       }
     },
     [fetchDepartures, startAutoRefresh, vehicleNumberFilters, setCurrentStop]
@@ -350,7 +353,7 @@ export default function StopsScreen() {
       const newFilters = [...vehicleNumberFilters, newFilter];
       setVehicleNumberFilters(newFilters);
       if (selectedStop) {
-        fetchDepartures(selectedStop, newFilters);
+        // Only call startAutoRefresh - it will handle the fetch
         startAutoRefresh(selectedStop, newFilters);
       }
     }
@@ -359,7 +362,6 @@ export default function StopsScreen() {
     vehicleNumberInput,
     vehicleNumberFilters,
     selectedStop,
-    fetchDepartures,
     startAutoRefresh,
   ]);
 
@@ -368,11 +370,11 @@ export default function StopsScreen() {
       const newFilters = vehicleNumberFilters.filter((n) => n !== number);
       setVehicleNumberFilters(newFilters);
       if (selectedStop) {
-        fetchDepartures(selectedStop, newFilters);
+        // Only call startAutoRefresh - it will handle the fetch
         startAutoRefresh(selectedStop, newFilters);
       }
     },
-    [vehicleNumberFilters, selectedStop, fetchDepartures, startAutoRefresh]
+    [vehicleNumberFilters, selectedStop, startAutoRefresh]
   );
 
   // Manual refresh
@@ -395,10 +397,10 @@ export default function StopsScreen() {
   useEffect(() => {
     if (currentStop && !selectedStop) {
       setSelectedStop(currentStop);
-      fetchDepartures(currentStop, vehicleNumberFilters);
+      // Only call startAutoRefresh - it will handle the initial fetch
       startAutoRefresh(currentStop, vehicleNumberFilters);
     }
-  }, [currentStop, selectedStop, fetchDepartures, startAutoRefresh, vehicleNumberFilters]);
+  }, [currentStop, selectedStop, startAutoRefresh, vehicleNumberFilters]);
 
   // Update search query when currentStopName changes
   useEffect(() => {
