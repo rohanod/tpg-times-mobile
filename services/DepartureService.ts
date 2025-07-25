@@ -3,8 +3,8 @@ import { API_ENDPOINTS } from '../config';
 import ResponseLogger from './ResponseLogger';
 
 export interface Stop {
-  id?: string;
-  name: string;
+  id: string; // DIDOC code - required
+  rawName?: string; // Whatever text was used before API call - optional
 }
 
 export interface Connection {
@@ -35,6 +35,11 @@ export interface GroupedDeparture {
   };
 }
 
+export interface DepartureServiceResult {
+  formattedStopName: string;
+  departures: GroupedDeparture[];
+}
+
 export interface VehiclePosition {
   vehicleKey: string;
   position: number;
@@ -43,8 +48,7 @@ export interface VehiclePosition {
 class DepartureService {
   private static instance: DepartureService;
   private activeRequests = new Map<string, Promise<any>>();
-  private refreshTimer: NodeJS.Timeout | null = null;
-  private readonly REFRESH_INTERVAL = 60000; // 60 seconds (1 minute) refresh interval
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
   
   static getInstance(): DepartureService {
     if (!DepartureService.instance) {
@@ -100,7 +104,7 @@ class DepartureService {
       if (data && data.stations && Array.isArray(data.stations)) {
         return data.stations.map((station: any) => ({
           id: station.id,
-          name: station.name
+          rawName: station.name
         }));
       }
       
@@ -112,38 +116,20 @@ class DepartureService {
   }
 
   /**
-   * Fetch departures with rate limiting and request deduplication
+   * Fetch departures with request deduplication
    */
-  async getDepartures(stopName: string, vehicleFilters: string[] = []): Promise<GroupedDeparture[]> {
-    if (!stopName?.trim()) {
-      throw new Error('Stop name is required');
+  async getDepartures(stop: Stop, vehicleFilters: string[] = []): Promise<DepartureServiceResult> {
+    if (!stop?.id?.trim()) {
+      throw new Error('Stop ID is required');
     }
 
-    const cacheKey = `departures_${stopName.toLowerCase()}`;
-
-    // Check if request is already in progress
-    if (this.activeRequests.has(cacheKey)) {
-      if (__DEV__) {
-        console.log('Request already in progress, waiting for result');
-      }
-      return this.activeRequests.get(cacheKey);
-    }
-
-    const requestPromise = this.fetchDepartures(stopName, vehicleFilters);
-    this.activeRequests.set(cacheKey, requestPromise);
-
-    try {
-      const result = await requestPromise;
-      return result;
-    } finally {
-      this.activeRequests.delete(cacheKey);
-    }
+    return this.fetchDepartures(stop, vehicleFilters);
   }
 
-  private async fetchDepartures(stopName: string, vehicleFilters: string[]): Promise<GroupedDeparture[]> {
+  private async fetchDepartures(stop: Stop, vehicleFilters: string[]): Promise<DepartureServiceResult> {
+    const url = `${API_ENDPOINTS.STATIONBOARD}?stop=${stop.id}&limit=300&show_delays=1&transportation_types=tram,bus&mode=depart`;
+    
     try {
-      const url = `${API_ENDPOINTS.STATIONBOARD}?stop=${encodeURIComponent(stopName)}&limit=300&show_delays=1&transportation_types=tram,bus&mode=depart`;
-      
       if (__DEV__) {
         console.log('Fetching departures from URL:', url);
       }
@@ -163,10 +149,16 @@ class DepartureService {
       }
 
       if (!data?.connections) {
-        return [];
+        return {
+          formattedStopName: data?.stop?.name || stop.rawName || '',
+          departures: []
+        };
       }
 
-      return this.processDepartures(data.connections, vehicleFilters);
+      return {
+        formattedStopName: data.stop.name,
+        departures: this.processDepartures(data.connections, vehicleFilters)
+      };
     } catch (error) {
       console.error('Error fetching departures:', error);
       ResponseLogger.getInstance().logError(url, error);
@@ -245,27 +237,35 @@ class DepartureService {
   }
 
   /**
+   * Helper to schedule refresh at the next minute (00 seconds)
+   */
+  private scheduleNextMinute(refreshFn: () => void): void {
+    const delay = 60000 - (Date.now() % 60000);
+    this.refreshTimer = setTimeout(refreshFn, delay);
+    
+    if (__DEV__) {
+      const nextRefreshTime = new Date(Date.now() + delay);
+      console.log(`Next refresh scheduled for: ${nextRefreshTime.toLocaleTimeString()}`);
+    }
+  }
+
+  /**
    * Start automatic refresh for a stop
    */
-  startAutoRefresh(stopName: string, vehicleFilters: string[], callback: (departures: GroupedDeparture[]) => void): void {
+  startAutoRefresh(stop: Stop, vehicleFilters: string[], callback: (result: DepartureServiceResult) => void): void {
     this.stopAutoRefresh(); // Clear any existing timer
 
     const refreshFunction = async () => {
       try {
-        const departures = await this.getDepartures(stopName, vehicleFilters);
-        callback(departures);
+        const result = await this.getDepartures(stop, vehicleFilters);
+        callback(result);
         
-        // Schedule next refresh
-        this.refreshTimer = setTimeout(refreshFunction, this.REFRESH_INTERVAL);
-        
-        if (__DEV__) {
-          const nextRefreshTime = new Date(Date.now() + this.REFRESH_INTERVAL);
-          console.log(`Next refresh scheduled for: ${nextRefreshTime.toLocaleTimeString()}`);
-        }
+        // Schedule next refresh at the next minute mark
+        this.scheduleNextMinute(refreshFunction);
       } catch (error) {
         console.error('Auto-refresh error:', error);
-        // Retry after a longer interval on error
-        this.refreshTimer = setTimeout(refreshFunction, this.REFRESH_INTERVAL * 2);
+        // Retry at the next minute mark even on error
+        this.scheduleNextMinute(refreshFunction);
       }
     };
 
@@ -287,14 +287,15 @@ class DepartureService {
   }
 
   /**
-   * Manual refresh with rate limiting
+   * Manual refresh
    */
-  async manualRefresh(stopName: string, vehicleFilters: string[]): Promise<GroupedDeparture[]> {
+  async manualRefresh(stopId: string, vehicleFilters: string[]): Promise<DepartureServiceResult> {
     if (__DEV__) {
-      console.log('Manual refresh requested for:', stopName);
+      console.log('Manual refresh requested for:', stopId);
     }
     
-    return this.getDepartures(stopName, vehicleFilters);
+    const stop: Stop = { id: stopId };
+    return this.getDepartures(stop, vehicleFilters);
   }
 
   /**

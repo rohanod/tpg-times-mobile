@@ -4,6 +4,7 @@ import DepartureService, { type GroupedDeparture, type Stop } from '../services/
 
 interface UseDepartureServiceReturn {
   departures: GroupedDeparture[];
+  currentStopName: string | null;
   loading: boolean;
   error: string | null;
   refreshing: boolean;
@@ -15,6 +16,7 @@ interface UseDepartureServiceReturn {
 
 export function useDepartureService(): UseDepartureServiceReturn {
   const [departures, setDepartures] = useState<GroupedDeparture[]>([]);
+  const [currentStopName, setCurrentStopName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -24,7 +26,7 @@ export function useDepartureService(): UseDepartureServiceReturn {
   const currentFilters = useRef<string[]>([]);
 
   const fetchDepartures = useCallback(async (stop: Stop, vehicleFilters: string[] = []) => {
-    if (!stop?.name) {
+    if (!stop?.id) {
       setError('Invalid stop provided');
       return;
     }
@@ -35,11 +37,12 @@ export function useDepartureService(): UseDepartureServiceReturn {
     currentFilters.current = vehicleFilters;
 
     try {
-      const result = await departureService.current.getDepartures(stop.name, vehicleFilters);
-      setDepartures(result);
+      const result = await departureService.current.getDepartures(stop, vehicleFilters);
+      setDepartures(result.departures);
+      setCurrentStopName(result.formattedStopName);
       
       if (__DEV__) {
-        console.log(`Fetched ${result.length} departures for ${stop.name}`);
+        console.log(`Fetched ${result.departures.length} departures for ${result.formattedStopName}`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch departures';
@@ -67,7 +70,7 @@ export function useDepartureService(): UseDepartureServiceReturn {
   }, []);
 
   const startAutoRefresh = useCallback((stop: Stop, vehicleFilters: string[] = []) => {
-    if (!stop?.name) {
+    if (!stop?.id) {
       setError('Invalid stop provided for auto-refresh');
       return;
     }
@@ -76,18 +79,19 @@ export function useDepartureService(): UseDepartureServiceReturn {
     currentFilters.current = vehicleFilters;
 
     if (__DEV__) {
-      console.log(`Starting auto-refresh for ${stop.name}`);
+      console.log(`Starting auto-refresh for ${stop.rawName || stop.id}`);
     }
 
     departureService.current.startAutoRefresh(
-      stop.name,
+      stop,
       vehicleFilters,
-      (newDepartures) => {
-        setDepartures(newDepartures);
+      (result) => {
+        setDepartures(result.departures);
+        setCurrentStopName(result.formattedStopName);
         setError(null);
         
         if (__DEV__) {
-          console.log(`Auto-refresh updated: ${newDepartures.length} departures`);
+          console.log(`Auto-refresh updated: ${result.departures.length} departures for ${result.formattedStopName}`);
         }
       }
     );
@@ -102,7 +106,7 @@ export function useDepartureService(): UseDepartureServiceReturn {
   }, []);
 
   const manualRefresh = useCallback(async () => {
-    if (!currentStop.current?.name) {
+    if (!currentStop.current?.id) {
       setError('No stop selected for manual refresh');
       return;
     }
@@ -112,14 +116,15 @@ export function useDepartureService(): UseDepartureServiceReturn {
 
     try {
       const result = await departureService.current.manualRefresh(
-        currentStop.current.name,
+        currentStop.current.id,
         currentFilters.current
       );
       
-      setDepartures(result);
+      setDepartures(result.departures);
+      setCurrentStopName(result.formattedStopName);
       
       if (__DEV__) {
-        console.log(`Manual refresh completed: ${result.length} departures`);
+        console.log(`Manual refresh completed: ${result.departures.length} departures for ${result.formattedStopName}`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to refresh departures';
@@ -145,6 +150,7 @@ export function useDepartureService(): UseDepartureServiceReturn {
 
   return {
     departures,
+    currentStopName,
     loading,
     error,
     refreshing,

@@ -146,6 +146,7 @@ export default function StopsScreen() {
   const { findNearestStop } = useArretsCsv();
   const {
     departures,
+    currentStopName,
     loading: departuresLoading,
     error: departuresError,
     refreshing,
@@ -296,7 +297,6 @@ export default function StopsScreen() {
     async (stop: Stop) => {
       setSelectedStop(stop);
       setCurrentStop(stop);
-      setSearchQuery(stop.name);
       setSuggestions([]);
       setInputFocused(false);
       Keyboard.dismiss();
@@ -319,22 +319,10 @@ export default function StopsScreen() {
     if (locationLoading || searchLoading) return;
     setLocationLoading(true);
     try {
-      const locationResult = await locationService.current.getCurrentLocation();
-      if ('error' in locationResult) {
-        Alert.alert(
-          language === 'en' ? 'Location Error' : 'Erreur de localisation',
-          language === 'en'
-            ? 'Could not detect your location'
-            : 'Impossible de détecter votre position'
-        );
-        return;
-      }
-      const nearestStop = await findNearestStop(
-        locationResult.latitude,
-        locationResult.longitude
-      );
-      if (nearestStop) {
-        await handleStopSelect(nearestStop);
+      const nearestStop = await findNearestStop();
+      if (nearestStop && !('error' in nearestStop)) {
+        // Construct the Stop object with proper structure for handleStopSelect
+        await handleStopSelect({ id: nearestStop.id, rawName: nearestStop.name });
       } else {
         Alert.alert(
           language === 'en' ? 'No Stops Found' : 'Aucun arrêt trouvé',
@@ -407,11 +395,17 @@ export default function StopsScreen() {
   useEffect(() => {
     if (currentStop && !selectedStop) {
       setSelectedStop(currentStop);
-      setSearchQuery(currentStop.name);
       fetchDepartures(currentStop, vehicleNumberFilters);
       startAutoRefresh(currentStop, vehicleNumberFilters);
     }
   }, [currentStop, selectedStop, fetchDepartures, startAutoRefresh, vehicleNumberFilters]);
+
+  // Update search query when currentStopName changes
+  useEffect(() => {
+    if (currentStopName && !inputFocused) {
+      setSearchQuery(currentStopName);
+    }
+  }, [currentStopName, inputFocused]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -453,7 +447,7 @@ export default function StopsScreen() {
       onPress={() => handleStopSelect(item)}
     >
       <MapPin size={16} color={theme.textSecondary} />
-      <Text style={[styles.suggestionText, { color: theme.text }]}>{item.name}</Text>
+      <Text style={[styles.suggestionText, { color: theme.text }]}>{item.rawName}</Text>
     </TouchableOpacity>
   );
 
@@ -557,7 +551,7 @@ export default function StopsScreen() {
               <FlatList
                 data={suggestions}
                 renderItem={renderSuggestion}
-                keyExtractor={(item, index) => `${item.id || item.name}-${index}`}
+                keyExtractor={(item, index) => `${item.id || item.rawName}-${index}`}
                 style={styles.suggestionsList}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}

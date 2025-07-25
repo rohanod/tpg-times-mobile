@@ -9,9 +9,15 @@ interface ArretData {
   active: boolean;
   fullName: string;
   distance?: number;
+  didocCode: string;
 }
 
 interface StopSuggestion {
+  id: string;
+  rawName: string;
+}
+
+interface NearestStopResult {
   id: string;
   name: string;
 }
@@ -41,12 +47,15 @@ export const useArretsCsv = () => {
         const parts = line.split(';');
         if (parts.length < 7) return null;
         
+        const active = parts[6].trim() === 'Y';
+        if (!active) return null;
+
         const name = parts[1].trim();
         const municipality = parts[2].trim();
+        const didocCode = parts[4].trim();
         const coordsStr = parts[5].trim();
-        const active = parts[6].trim() === 'Y';
         
-        if (!name || !municipality || !coordsStr || !active) return null;
+        if (!didocCode || !name || !municipality || !coordsStr) return null;
         
         const coordParts = coordsStr.split(',');
         if (coordParts.length < 2) return null;
@@ -56,6 +65,7 @@ export const useArretsCsv = () => {
         if (isNaN(lat) || isNaN(lon)) return null;
         
         return {
+          didocCode,
           name,
           municipality,
           coords: [lat, lon] as [number, number],
@@ -130,7 +140,7 @@ export const useArretsCsv = () => {
     return R * c;
   };
 
-  const findNearestStop = async (): Promise<StopSuggestion | null | LocationError> => {
+  const findNearestStop = async (): Promise<NearestStopResult | null | LocationError> => {
     try {
       console.log('Starting location detection process');
       
@@ -261,28 +271,10 @@ export const useArretsCsv = () => {
         }
         
         console.log(`Found nearest stop: ${nearestStop.fullName} at ${nearestStop.distance?.toFixed(2)} km`);
-        
-        const formattedName = nearestStop.fullName;
-        
-        try {
-          const response = await fetch(
-            `${API_ENDPOINTS.LOCATIONS}?query=${encodeURIComponent(formattedName)}&type=station`
-          );
-          const data = await response.json();
-          
-          if (data.stations && data.stations.length > 0) {
-            return {
-              id: data.stations[0].id,
-              name: data.stations[0].name
-            };
-          }
-        } catch {
-          console.error('Error with locations API:');
-        }
-        
+
         return {
-          id: `local-${Date.now()}`,
-          name: formattedName
+          id: nearestStop.didocCode,
+          name: nearestStop.name,
         };
       } catch {
         return { 
@@ -310,7 +302,7 @@ export const useArretsCsv = () => {
         const fullName = await getFullStopName(suggestion.name);
         validSuggestions.push({
           id: suggestion.id || `suggestion-${Date.now()}-${Math.random()}`,
-          name: fullName
+          rawName: fullName
         });
       }
     }

@@ -7,12 +7,12 @@ interface VehiclePosition {
 
 interface CurrentStopState {
   currentStop: {
-    id?: string;
-    name: string;
+    id: string; // DIDOC code - required
+    rawName?: string; // Whatever text was used before API call - optional
   } | null;
   vehicleNumberFilters: string[];
   vehiclePositions: VehiclePosition[];
-  setCurrentStop: (stop: { id?: string; name: string; } | null) => void;
+  setCurrentStop: (stop: { id: string; rawName?: string; } | null) => void;
   setVehicleNumberFilters: (filters: string[]) => void;
   setVehiclePositions: (positions: VehiclePosition[]) => void;
   clearCurrentStop: () => void;
