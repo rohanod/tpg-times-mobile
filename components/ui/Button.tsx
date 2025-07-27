@@ -7,6 +7,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
+import { componentSizes, borderRadius, spacing } from '~/utils/responsive';
 
 interface ButtonProps {
   title: string;
@@ -71,8 +72,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
-    gap: 8,
+    borderRadius: borderRadius.lg,
+    gap: spacing.sm,
   },
   primary: {
     backgroundColor: '#007AFF',
@@ -86,19 +87,19 @@ const styles = StyleSheet.create({
     borderColor: '#007AFF',
   },
   small: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minHeight: 32,
+    paddingHorizontal: componentSizes.button.small.paddingHorizontal,
+    paddingVertical: spacing.sm,
+    minHeight: componentSizes.button.small.height,
   },
   medium: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minHeight: 44,
+    paddingHorizontal: componentSizes.button.medium.paddingHorizontal,
+    paddingVertical: spacing.md,
+    minHeight: componentSizes.button.medium.height,
   },
   large: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    minHeight: 52,
+    paddingHorizontal: componentSizes.button.large.paddingHorizontal,
+    paddingVertical: spacing.lg,
+    minHeight: componentSizes.button.large.height,
   },
   disabled: {
     opacity: 0.5,
@@ -117,13 +118,13 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   smallText: {
-    fontSize: 14,
+    fontSize: componentSizes.button.small.fontSize,
   },
   mediumText: {
-    fontSize: 16,
+    fontSize: componentSizes.button.medium.fontSize,
   },
   largeText: {
-    fontSize: 18,
+    fontSize: componentSizes.button.large.fontSize,
   },
   disabledText: {
     opacity: 0.7,

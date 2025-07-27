@@ -9,8 +9,9 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { useSettings } from '~/hooks/useSettings';
-import { getThemeColors } from '~/config/theme';
+import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { formatTime } from '~/utils/formatTime';
+import { spacing, borderRadius, typography, scaleWidth, scaleFont } from '~/utils/responsive';
 import type { GroupedDeparture } from '~/services/DepartureService';
 
 interface DepartureCardProps {
@@ -25,7 +26,7 @@ export const DepartureCard: React.FC<DepartureCardProps> = React.memo(({
   isVisible,
 }) => {
   const { language, timeFormat, darkMode } = useSettings();
-  const theme = getThemeColors(darkMode);
+  const theme = getResponsiveTheme(darkMode);
 
   const opacity = useSharedValue(0);
   const translateX = useSharedValue(400);
@@ -107,59 +108,59 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
-    marginBottom: 8,
-    gap: 12,
+    marginBottom: spacing.sm,
+    gap: spacing.md,
   },
   vehicleIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
+    width: scaleWidth(40),
+    height: scaleWidth(40),
+    borderRadius: borderRadius.sm,
     justifyContent: 'center',
     alignItems: 'center',
   },
   vehicleNumber: {
     color: 'white',
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontWeight: 'bold',
   },
   departureInfo: {
     flex: 1,
   },
   vehicleType: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   destinationRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 2,
+    marginBottom: spacing.xs / 2,
   },
   destinationText: {
-    fontSize: 14,
+    ...typography.caption,
     flex: 1,
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   timesContainer: {
     flexDirection: 'row',
-    gap: 6,
+    gap: spacing.xs,
   },
   timeChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: spacing.xs / 2,
   },
   timeText: {
-    fontSize: 14,
+    ...typography.caption,
     fontWeight: '500',
   },
   delayText: {
-    fontSize: 12,
+    fontSize: scaleFont(12),
     color: '#FF3B30',
     fontWeight: '500',
   },

@@ -2,8 +2,10 @@ import React from 'react';
 import { FlatList, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { useSettings } from '~/hooks/useSettings';
-import { getThemeColors } from '~/config/theme';
+import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { StopSuggestion } from '../molecules/StopSuggestion';
+import { spacing, borderRadius, getResponsiveValue, scaleHeight } from '~/utils/responsive';
+import { LAYOUT } from '~/utils/layout';
 import type { Stop } from '~/services/DepartureService';
 
 interface SuggestionsListProps {
@@ -20,7 +22,7 @@ export const SuggestionsList: React.FC<SuggestionsListProps> = ({
   animatedStyle,
 }) => {
   const { darkMode } = useSettings();
-  const theme = getThemeColors(darkMode);
+  const theme = getResponsiveTheme(darkMode);
 
   if (!visible || suggestions.length === 0) {
     return null;
@@ -57,18 +59,18 @@ export const SuggestionsList: React.FC<SuggestionsListProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 150,
-    left: 20,
-    right: 20,
+    top: LAYOUT.SUGGESTIONS_TOP,
+    left: LAYOUT.CONTAINER_PADDING,
+    right: LAYOUT.CONTAINER_PADDING,
     zIndex: 1000,
-    borderRadius: 12,
+    borderRadius: borderRadius.lg,
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     borderWidth: 1,
-    maxHeight: 250,
+    maxHeight: scaleHeight(250),
   },
   list: {
     flexGrow: 0,

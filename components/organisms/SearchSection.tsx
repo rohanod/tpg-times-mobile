@@ -2,6 +2,8 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { SearchBar } from '../ui/SearchBar';
+import { spacing } from '~/utils/responsive';
+import { LAYOUT } from '~/utils/layout';
 
 interface SearchSectionProps {
   searchQuery: string;
@@ -44,8 +46,8 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: LAYOUT.CONTAINER_PADDING,
+    paddingVertical: LAYOUT.SECTION_GAP,
     zIndex: 1001,
   },
 });

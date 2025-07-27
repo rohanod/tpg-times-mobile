@@ -2,7 +2,8 @@ import React from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Plus } from 'lucide-react-native';
 import { useSettings } from '~/hooks/useSettings';
-import { getThemeColors } from '~/config/theme';
+import { getResponsiveTheme } from '~/utils/responsiveTheme';
+import { spacing, borderRadius, typography, scaleWidth } from '~/utils/responsive';
 
 interface VehicleFilterInputProps {
   value: string;
@@ -18,7 +19,7 @@ export const VehicleFilterInput: React.FC<VehicleFilterInputProps> = ({
   placeholder,
 }) => {
   const { darkMode, language } = useSettings();
-  const theme = getThemeColors(darkMode);
+  const theme = getResponsiveTheme(darkMode);
 
   const defaultPlaceholder = language === 'en' 
     ? 'Filter by vehicle number...' 
@@ -40,7 +41,7 @@ export const VehicleFilterInput: React.FC<VehicleFilterInputProps> = ({
         style={[styles.addButton, { backgroundColor: theme.primary }]}
         onPress={onSubmit}
       >
-        <Plus size={16} color="white" />
+        <Plus size={scaleWidth(16)} color="white" />
       </TouchableOpacity>
     </View>
   );
@@ -51,19 +52,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
   },
   addButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: scaleWidth(32),
+    height: scaleWidth(32),
+    borderRadius: borderRadius.sm,
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -1,14 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
-  View,
-  Text,
   StyleSheet,
   Keyboard,
   Alert,
-  Dimensions,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -22,20 +18,25 @@ import { useSettings } from '~/hooks/useSettings';
 import { useArretsCsv } from '~/hooks/useArretsCsv';
 import { useCurrentStop } from '~/hooks/useCurrentStop';
 import { useDepartureService } from '~/hooks/useDepartureService';
-import { getThemeColors } from '~/config/theme';
+import { useResponsiveLayout } from '~/hooks/useResponsiveLayout';
+import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import DepartureService, { type Stop } from '~/services/DepartureService';
+import { 
+  screenDimensions, 
+  animations
+} from '~/utils/responsive';
 
 import { SearchSection } from '../organisms/SearchSection';
 import { SuggestionsList } from '../organisms/SuggestionsList';
 import { VehicleFilters } from '../organisms/VehicleFilters';
 import { DeparturesList } from '../organisms/DeparturesList';
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+import { ResponsiveLayout } from '../layout/ResponsiveLayout';
+import { PageHeader } from '../layout/PageHeader';
 
 export const StopsPage: React.FC = () => {
-  const insets = useSafeAreaInsets();
   const { language, darkMode } = useSettings();
-  const theme = getThemeColors(darkMode);
+  const responsiveLayout = useResponsiveLayout();
+  const theme = getResponsiveTheme(darkMode);
 
   // State management
   const [searchQuery, setSearchQuery] = useState('');
@@ -91,26 +92,26 @@ export const StopsPage: React.FC = () => {
 
   // Animation styles
   const animatedSearchEntranceStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: (1 - searchEntranceProgress.value) * screenWidth }],
+    transform: [{ translateX: (1 - searchEntranceProgress.value) * screenDimensions.width }],
     opacity: searchEntranceProgress.value,
   }));
 
   const animatedFiltersEntranceStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: (1 - filtersEntranceProgress.value) * -screenWidth }],
+    transform: [{ translateX: (1 - filtersEntranceProgress.value) * -screenDimensions.width }],
     opacity: filtersEntranceProgress.value,
   }));
 
   const animatedFiltersStyle = useAnimatedStyle(() => ({
     opacity: 1 - animationProgress.value,
-    transform: [{ translateX: -animationProgress.value * screenWidth }],
+    transform: [{ translateX: -animationProgress.value * screenDimensions.width }],
   }));
 
   const animatedDeparturesStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: animationProgress.value * screenHeight }],
+    transform: [{ translateY: animationProgress.value * screenDimensions.height }],
   }));
 
   const animatedSuggestionsStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: (1 - animationProgress.value) * -200 }],
+    transform: [{ translateY: (1 - animationProgress.value) * -animations.translate.large * 4 }],
     opacity: animationProgress.value,
   }));
 
@@ -321,15 +322,11 @@ export const StopsPage: React.FC = () => {
   }, [departures]);
 
   return (
-    <View style={{ flex: 1 }}>
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={{ flex: 1 }}>
-          {/* Header */}
-          <View style={[styles.header, { paddingTop: insets.top }]}>
-            <Text style={[styles.title, { color: theme.text }]}>
-              {language === 'en' ? 'TPG Times' : 'Horaires TPG'}
-            </Text>
-          </View>
+    <ResponsiveLayout>
+      {/* Header */}
+      <PageHeader
+        title={language === 'en' ? 'TPG Times' : 'Horaires TPG'}
+      />
 
           {/* Search Section */}
           <SearchSection
@@ -362,34 +359,22 @@ export const StopsPage: React.FC = () => {
             animatedStyle={[animatedFiltersStyle, animatedFiltersEntranceStyle]}
           />
 
-          {/* Departures List */}
-          {selectedStop && (
-            <DeparturesList
-              departures={departures}
-              vehicleOrder={vehicleOrder}
-              loading={departuresLoading}
-              error={departuresError}
-              refreshing={refreshing}
-              onRefresh={handleManualRefresh}
-              animatedStyle={animatedDeparturesStyle}
-            />
-          )}
-        </View>
-      </SafeAreaView>
-    </View>
+      {/* Departures List */}
+      {selectedStop && (
+        <DeparturesList
+          departures={departures}
+          vehicleOrder={vehicleOrder}
+          loading={departuresLoading}
+          error={departuresError}
+          refreshing={refreshing}
+          onRefresh={handleManualRefresh}
+          animatedStyle={animatedDeparturesStyle}
+        />
+      )}
+    </ResponsiveLayout>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 10,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-  },
+  // Styles moved to layout components
 });

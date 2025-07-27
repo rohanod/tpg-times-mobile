@@ -3,6 +3,8 @@ import { View, FlatList, StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { VehicleFilterInput } from '../molecules/VehicleFilterInput';
 import { FilterChip } from '../ui/FilterChip';
+import { spacing } from '~/utils/responsive';
+import { LAYOUT } from '~/utils/layout';
 
 interface VehicleFiltersProps {
   vehicleNumberInput: string;
@@ -52,11 +54,11 @@ export const VehicleFilters: React.FC<VehicleFiltersProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 16,
+    paddingHorizontal: LAYOUT.CONTAINER_PADDING,
+    paddingTop: LAYOUT.SECTION_GAP,
+    paddingBottom: LAYOUT.SECTION_GAP,
   },
   filtersRow: {
-    marginTop: 10,
+    marginTop: LAYOUT.SECTION_GAP,
   },
 });

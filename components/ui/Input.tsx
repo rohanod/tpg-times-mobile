@@ -8,7 +8,8 @@ import {
   ViewStyle,
 } from 'react-native';
 import { useSettings } from '~/hooks/useSettings';
-import { getThemeColors } from '~/config/theme';
+import { getResponsiveTheme } from '~/utils/responsiveTheme';
+import { componentSizes, borderRadius, spacing, typography } from '~/utils/responsive';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -28,7 +29,7 @@ export const Input: React.FC<InputProps> = ({
   ...props
 }) => {
   const { darkMode } = useSettings();
-  const theme = getThemeColors(darkMode);
+  const theme = getResponsiveTheme(darkMode);
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -63,37 +64,37 @@ export const Input: React.FC<InputProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   label: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '500',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    minHeight: 44,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: componentSizes.input.paddingHorizontal,
+    minHeight: componentSizes.input.height,
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    paddingVertical: 12,
+    fontSize: componentSizes.input.fontSize,
+    paddingVertical: spacing.md,
   },
   iconLeft: {
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   iconRight: {
-    marginLeft: 8,
+    marginLeft: spacing.sm,
   },
   errorBorder: {
     borderColor: '#FF3B30',
   },
   errorText: {
-    fontSize: 14,
-    marginTop: 4,
+    ...typography.caption,
+    marginTop: spacing.xs,
   },
 });

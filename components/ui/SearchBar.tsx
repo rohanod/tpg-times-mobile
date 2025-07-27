@@ -8,7 +8,8 @@ import {
 } from 'react-native';
 import { Search, X, MapPin } from 'lucide-react-native';
 import { useSettings } from '~/hooks/useSettings';
-import { getThemeColors } from '~/config/theme';
+import { getResponsiveTheme } from '~/utils/responsiveTheme';
+import { componentSizes, borderRadius, spacing } from '~/utils/responsive';
 
 interface SearchBarProps {
   value: string;
@@ -34,7 +35,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   locationLoading = false,
 }) => {
   const { darkMode, language } = useSettings();
-  const theme = getThemeColors(darkMode);
+  const theme = getResponsiveTheme(darkMode);
 
   const defaultPlaceholder = language === 'en' 
     ? 'Search for a stop...' 
@@ -43,11 +44,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   return (
     <View style={styles.container}>
       <View style={[styles.searchContainer, { borderColor: theme.border }]}>
-        <Search size={20} color={theme.textSecondary} />
+        <Search size={componentSizes.searchBar.iconSize} color={theme.textSecondary} />
         <TextInput
           autoComplete="off"
           autoCorrect={false}
-          style={[styles.searchInput, { color: theme.text }]}
+          style={[styles.searchInput, { color: theme.text, fontSize: componentSizes.searchBar.fontSize }]}
           placeholder={placeholder || defaultPlaceholder}
           placeholderTextColor={theme.textSecondary}
           value={value}
@@ -58,7 +59,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         />
         {value.length > 0 && !loading && (
           <TouchableOpacity onPress={onClear} style={styles.clearButton}>
-            <X size={18} color={theme.textSecondary} />
+            <X size={componentSizes.searchBar.iconSize * 0.9} color={theme.textSecondary} />
           </TouchableOpacity>
         )}
         {loading && <ActivityIndicator size="small" color={theme.primary} />}
@@ -72,7 +73,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         {locationLoading ? (
           <ActivityIndicator size="small" color="white" />
         ) : (
-          <MapPin size={20} color="white" />
+          <MapPin size={componentSizes.searchBar.iconSize} color="white" />
         )}
       </TouchableOpacity>
     </View>
@@ -82,29 +83,28 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing.sm,
   },
   searchContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
-    gap: 8,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: componentSizes.searchBar.paddingHorizontal,
+    height: componentSizes.searchBar.height,
+    gap: spacing.sm,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
   },
   clearButton: {
     // No additional styling needed
   },
   locationButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: componentSizes.searchBar.height,
+    height: componentSizes.searchBar.height,
+    borderRadius: borderRadius.lg,
     justifyContent: 'center',
     alignItems: 'center',
   },

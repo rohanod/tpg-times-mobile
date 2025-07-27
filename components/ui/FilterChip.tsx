@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { X } from 'lucide-react-native';
 import { useSettings } from '~/hooks/useSettings';
-import { getThemeColors } from '~/config/theme';
+import { getResponsiveTheme } from '~/utils/responsiveTheme';
+import { spacing, borderRadius, scaleFont, scaleWidth } from '~/utils/responsive';
 
 interface FilterChipProps {
   label: string;
@@ -16,7 +17,7 @@ export const FilterChip: React.FC<FilterChipProps> = ({
   color,
 }) => {
   const { darkMode } = useSettings();
-  const theme = getThemeColors(darkMode);
+  const theme = getResponsiveTheme(darkMode);
 
   return (
     <View style={[styles.container, { backgroundColor: color || theme.primary }]}>
@@ -32,21 +33,21 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.xl,
+    marginRight: spacing.sm,
+    gap: spacing.xs,
   },
   label: {
     color: 'white',
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontWeight: '500',
   },
   removeButton: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: scaleWidth(18),
+    height: scaleWidth(18),
+    borderRadius: scaleWidth(9),
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',

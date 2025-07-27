@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useSettings } from '~/hooks/useSettings';
-import { getThemeColors } from '~/config/theme';
+import { getResponsiveTheme } from '~/utils/responsiveTheme';
+import { spacing, typography } from '~/utils/responsive';
 
 interface EmptyStateProps {
   title: string;
@@ -17,7 +18,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   action,
 }) => {
   const { darkMode } = useSettings();
-  const theme = getThemeColors(darkMode);
+  const theme = getResponsiveTheme(darkMode);
 
   return (
     <View style={styles.container}>
@@ -38,25 +39,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 40,
+    paddingHorizontal: spacing.xxxl,
+    paddingVertical: spacing.xxxl + spacing.sm,
   },
   iconContainer: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...typography.subtitle,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   description: {
-    fontSize: 16,
+    ...typography.body,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
   },
   actionContainer: {
-    marginTop: 16,
+    marginTop: spacing.lg,
   },
 });

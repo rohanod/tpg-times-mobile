@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { useSettings } from '~/hooks/useSettings';
-import { getThemeColors } from '~/config/theme';
+import { getResponsiveTheme } from '~/utils/responsiveTheme';
+import { spacing, typography } from '~/utils/responsive';
 
 interface LoadingSpinnerProps {
   size?: 'small' | 'large';
@@ -15,7 +16,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   color,
 }) => {
   const { darkMode } = useSettings();
-  const theme = getThemeColors(darkMode);
+  const theme = getResponsiveTheme(darkMode);
 
   return (
     <View style={styles.container}>
@@ -36,10 +37,10 @@ const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.sm,
   },
   text: {
-    fontSize: 16,
+    ...typography.body,
     textAlign: 'center',
   },
 });

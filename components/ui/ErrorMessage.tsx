@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { AlertCircle, RefreshCw } from 'lucide-react-native';
 import { useSettings } from '~/hooks/useSettings';
-import { getThemeColors } from '~/config/theme';
+import { getResponsiveTheme } from '~/utils/responsiveTheme';
+import { spacing, borderRadius, typography, scaleWidth } from '~/utils/responsive';
 
 interface ErrorMessageProps {
   message: string;
@@ -16,14 +17,14 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
   retryText = 'Retry',
 }) => {
   const { darkMode, language } = useSettings();
-  const theme = getThemeColors(darkMode);
+  const theme = getResponsiveTheme(darkMode);
 
   const displayRetryText = language === 'en' ? retryText : 'Réessayer';
 
   return (
     <View style={[styles.container, { backgroundColor: theme.surface }]}>
       <View style={styles.content}>
-        <AlertCircle size={24} color="#FF3B30" />
+        <AlertCircle size={scaleWidth(24)} color="#FF3B30" />
         <Text style={[styles.message, { color: '#FF3B30' }]}>{message}</Text>
       </View>
       {onRetry && (
@@ -31,7 +32,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
           style={[styles.retryButton, { borderColor: theme.border }]}
           onPress={onRetry}
         >
-          <RefreshCw size={16} color={theme.primary} />
+          <RefreshCw size={scaleWidth(16)} color={theme.primary} />
           <Text style={[styles.retryText, { color: theme.primary }]}>
             {displayRetryText}
           </Text>
@@ -43,33 +44,32 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    borderRadius: 12,
-    marginVertical: 8,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    marginVertical: spacing.sm,
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
+    gap: spacing.md,
+    marginBottom: spacing.md,
   },
   message: {
-    fontSize: 14,
+    ...typography.caption,
     flex: 1,
-    lineHeight: 20,
   },
   retryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
     borderWidth: 1,
-    borderRadius: 8,
-    gap: 6,
+    borderRadius: borderRadius.sm,
+    gap: spacing.xs,
   },
   retryText: {
-    fontSize: 14,
+    ...typography.caption,
     fontWeight: '500',
   },
 });

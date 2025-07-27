@@ -2,7 +2,8 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { MapPin } from 'lucide-react-native';
 import { useSettings } from '~/hooks/useSettings';
-import { getThemeColors } from '~/config/theme';
+import { getResponsiveTheme } from '~/utils/responsiveTheme';
+import { spacing, typography, scaleWidth } from '~/utils/responsive';
 import type { Stop } from '~/services/DepartureService';
 
 interface StopSuggestionProps {
@@ -15,14 +16,14 @@ export const StopSuggestion: React.FC<StopSuggestionProps> = ({
   onPress,
 }) => {
   const { darkMode } = useSettings();
-  const theme = getThemeColors(darkMode);
+  const theme = getResponsiveTheme(darkMode);
 
   return (
     <TouchableOpacity
       style={[styles.container, { borderBottomColor: theme.border }]}
       onPress={() => onPress(stop)}
     >
-      <MapPin size={16} color={theme.textSecondary} />
+      <MapPin size={scaleWidth(16)} color={theme.textSecondary} />
       <Text style={[styles.text, { color: theme.text }]}>{stop.rawName}</Text>
     </TouchableOpacity>
   );
@@ -32,13 +33,13 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    gap: 12,
+    gap: spacing.md,
   },
   text: {
-    fontSize: 16,
+    ...typography.body,
     flex: 1,
   },
 });

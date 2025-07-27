@@ -2,11 +2,13 @@ import React from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useSettings } from '~/hooks/useSettings';
-import { getThemeColors } from '~/config/theme';
+import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { DepartureCard } from '../molecules/DepartureCard';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { ErrorMessage } from '../ui/ErrorMessage';
 import { EmptyState } from '../ui/EmptyState';
+import { spacing, borderRadius, getResponsiveValue } from '~/utils/responsive';
+import { LAYOUT } from '~/utils/layout';
 import type { GroupedDeparture } from '~/services/DepartureService';
 
 interface DeparturesListProps {
@@ -31,7 +33,7 @@ export const DeparturesList: React.FC<DeparturesListProps> = ({
   animatedStyle,
 }) => {
   const { darkMode, language } = useSettings();
-  const theme = getThemeColors(darkMode);
+  const theme = getResponsiveTheme(darkMode);
   const departureCardsVisible = useSharedValue(true);
 
   const sortedDepartures = departures.sort((a, b) => {
@@ -94,7 +96,7 @@ export const DeparturesList: React.FC<DeparturesListProps> = ({
         refreshing={refreshing}
         onRefresh={onRefresh}
         keyboardDismissMode="on-drag"
-        ListHeaderComponent={<View style={{ height: 16 }} />}
+        ListHeaderComponent={<View style={{ height: spacing.lg }} />}
       />
     );
   };
@@ -120,11 +122,11 @@ export const DeparturesList: React.FC<DeparturesListProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    left: 20,
-    right: 20,
-    bottom: 5,
-    top: 250,
-    borderRadius: 16,
+    left: LAYOUT.CONTAINER_PADDING,
+    right: LAYOUT.CONTAINER_PADDING,
+    bottom: spacing.xs,
+    top: LAYOUT.DEPARTURES_TOP,
+    borderRadius: borderRadius.xl,
     shadowOffset: {
       width: 0,
       height: 4,
@@ -132,7 +134,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
   },
   centerContainer: {
     flex: 1,
