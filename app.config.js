@@ -1,4 +1,4 @@
-{
+export default {
   "expo": {
     "name": "TPG Times",
     "slug": "tpg-times",
@@ -68,4 +68,4 @@
     },
     "owner": "majulahsingapura"
   }
-}
+};
