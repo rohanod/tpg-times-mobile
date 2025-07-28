@@ -1,7 +1,9 @@
+const IS_DEV = process.env.EAS_BUILD_PROFILE === "development";
+
 export default {
   "expo": {
-    "name": "TPG Times",
-    "slug": "tpg-times",
+    "name": IS_DEV ? "TPG Times (Dev)" : "TPG Times",
+    "slug": IS_DEV ? "tpg-times-dev" : "tpg-times",
     "updates": {
       "url": "https://u.expo.dev/7d689592-1fb0-4eb4-963f-6493cb6a9cb3",
       "fallbackToCacheTimeout": 0,
@@ -9,12 +11,12 @@ export default {
       "enabled": true
     },
     "orientation": "portrait",
-    "scheme": "tpgtimes",
+    "scheme": IS_DEV ? "tpgtimes-dev" : "tpgtimes",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rohanodwyer.tpgtimes",
+      "bundleIdentifier": IS_DEV ? "com.rohanodwyer.tpgtimes.dev" : "com.rohanodwyer.tpgtimes",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -27,8 +29,8 @@ export default {
     "web": {
       "output": "single",
       "favicon": "./assets/images/favicon.png",
-      "name": "TPG Times",
-      "shortName": "TPG Times",
+      "name": IS_DEV ? "TPG Times (Dev)" : "TPG Times",
+      "shortName": IS_DEV ? "TPG Dev" : "TPG Times",
       "startUrl": ".",
       "scope": "/",
       "themeColor": "#FF6600",
@@ -57,7 +59,7 @@ export default {
       }
     },
     "android": {
-      "package": "com.rohanodwyer.tpgtimes",
+      "package": IS_DEV ? "com.rohanodwyer.tpgtimes.dev" : "com.rohanodwyer.tpgtimes",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/ios-light.png",
         "monochromeImage": "./assets/images/ios-dark.png"
