@@ -7,7 +7,7 @@
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
     "start": "EXPO_NO_TELEMETRY=1 expo start",
     "deploy:web": "expo export --platform web && eas deploy",
-    "dev:iphone": "expo run:ios --device 00008110-001129212111401E",
+    "run:iphone": "expo run:ios --device 00008110-001129212111401E",
     "deploy:iphone": "expo run:ios --device 00008110-001129212111401E --configuration Release",
     "lint": "expo lint",
     "android": "expo run:android",
