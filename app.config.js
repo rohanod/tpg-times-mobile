@@ -1,4 +1,4 @@
-const IS_DEV = process.env.EAS_BUILD_PROFILE === "development";
+const IS_DEV = process.env.APP_VARIANT === 'development';
 
 export default {
   "expo": {
@@ -24,6 +24,9 @@ export default {
         "light": "./assets/images/ios-light.png",
         "dark": "./assets/images/ios-dark.png",
         "tinted": "./assets/images/ios-tinted.png"
+      },
+      "catalyst": {
+        "enabled": true
       }
     },
     "web": {
