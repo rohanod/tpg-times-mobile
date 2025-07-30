@@ -1,9 +1,9 @@
-module.exports = function(api) {
+module.exports = function (api) {
   api.cache(true);
   return {
     presets: [['babel-preset-expo', { unstable_transformImportMeta: true }]],
     plugins: [
-      ['module-resolver', { alias: { '~': './' } }],
+      ['module-resolver', { alias: { '~': './src' } }],
       '@babel/plugin-transform-nullish-coalescing-operator',
       ['@babel/plugin-transform-class-properties', { loose: true }],
       ['@babel/plugin-transform-private-methods', { loose: true }],
