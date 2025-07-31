@@ -105,7 +105,7 @@ class LocationService {
           
           return result;
         }
-      } catch (error) {
+      } catch {
         if (__DEV__) {
           console.log('Last known position not available, getting current position');
         }

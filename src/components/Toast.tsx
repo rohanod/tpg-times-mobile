@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
-import { AlertCircle } from 'lucide-react-native';
+import { Text, StyleSheet, Animated } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 
 interface ToastProps {
   message: string;
@@ -74,7 +74,7 @@ export const Toast: React.FC<ToastProps> = ({
         },
       ]}
     >
-      <AlertCircle size={20} color="white" />
+      <MaterialIcons name="warning-amber" size={20} color="white" />
       <Text style={styles.message}>{message}</Text>
     </Animated.View>
   );

@@ -6,7 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { Search, X, MapPin } from 'lucide-react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSettings } from '~/hooks/useSettings';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { componentSizes, borderRadius, spacing } from '~/utils/responsive';
@@ -44,7 +44,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   return (
     <View style={styles.container}>
       <View style={[styles.searchContainer, { borderColor: theme.border }]}>
-        <Search size={componentSizes.searchBar.iconSize} color={theme.textSecondary} />
+        <MaterialIcons name="search" size={componentSizes.searchBar.iconSize} color={theme.textSecondary} />
         <TextInput
           autoComplete="off"
           autoCorrect={false}
@@ -59,7 +59,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         />
         {value.length > 0 && !loading && (
           <TouchableOpacity onPress={onClear} style={styles.clearButton}>
-            <X size={componentSizes.searchBar.iconSize * 0.9} color={theme.textSecondary} />
+            <MaterialIcons name="close" size={componentSizes.searchBar.iconSize * 0.9} color={theme.textSecondary} />
           </TouchableOpacity>
         )}
         {loading && <ActivityIndicator size="small" color={theme.primary} />}
@@ -73,7 +73,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         {locationLoading ? (
           <ActivityIndicator size="small" color="white" />
         ) : (
-          <MapPin size={componentSizes.searchBar.iconSize} color="white" />
+          <MaterialIcons name="location-pin" size={componentSizes.searchBar.iconSize} color="white" />
         )}
       </TouchableOpacity>
     </View>

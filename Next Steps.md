@@ -100,42 +100,53 @@ get-library-docs(context7CompatibleLibraryID=id, topic="sqlite")
 40. The first time I try to type a stop and wait for suggestions, it says no stops found but if I change it(Even just removing last character and re-adding it), it works. Make it so it works the first time.
 41. Sometimes it "goes crazy" and just makes a lot of requests really quickly(About 150 in 5 seconds) and logs a lot of things to the console. Make it so it doesn't make too many requests.
 41. Migrate to using icons from expo/vector icons: https://docs.expo.dev/guides/icons/
-Bus at /app/(tabs)/_layout.tsx:
+Bus:
 ```ts
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 <MaterialIcons name="directions-bus" size={24} color="black" />
 ```
 
-Settings at /app/(tabs)/_layout.tsx:
+Settings:
 ```ts
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 <MaterialIcons name="settings" size={24} color="black" />
 ```
 
-MapPin at /app/(tabs)/index.tsx:
+MapPin:
 ```ts
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 <MaterialIcons name="location-pin" size={24} color="black" />
 ```
 
-Search at /app/(tabs)/index.tsx:
+Search:
 ```ts
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 <MaterialIcons name="search" size={24} color="black" />
 ```
 
-X at /app/(tabs)/index.tsx:
+X:
 ```ts
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 <MaterialIcons name="close" size={24} color="black" />
 ```
 
-Plus at /app/(tabs)/index.tsx:
+Plus:
 ```ts
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 <MaterialIcons name="add" size={24} color="black" />
 ```
-42. 
+
+Refresh:
+```ts
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+<MaterialIcons name="refresh" size={24} color="black" />
+```
+
+Warning:
+```ts
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+<MaterialIcons name="warning-amber" size={24} color="black" />
+```
 
 # LAST:
 - Make sure it is accessible

@@ -1,8 +1,6 @@
 import { 
   spacing, 
-  isTablet, 
-  isSmallDevice, 
-  isLargeDevice,
+  isTablet,
   getResponsiveValue 
 } from './responsive';
 

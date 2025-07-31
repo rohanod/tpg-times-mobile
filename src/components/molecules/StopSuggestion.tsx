@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { MapPin } from 'lucide-react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSettings } from '~/hooks/useSettings';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { spacing, typography, scaleWidth } from '~/utils/responsive';
@@ -23,7 +23,7 @@ export const StopSuggestion: React.FC<StopSuggestionProps> = ({
       style={[styles.container, { borderBottomColor: theme.border }]}
       onPress={() => onPress(stop)}
     >
-      <MapPin size={scaleWidth(16)} color={theme.textSecondary} />
+      <MaterialIcons name="location-pin" size={scaleWidth(16)} color={theme.textSecondary} />
       <Text style={[styles.text, { color: theme.text }]}>{stop.rawName}</Text>
     </TouchableOpacity>
   );

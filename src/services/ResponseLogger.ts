@@ -9,18 +9,6 @@ class ResponseLogger {
   }
 
   async logResponse(url: string, response: Response, data: any) {
-    const timestamp = new Date().toISOString();
-    const logEntry = {
-      timestamp,
-      url,
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
-      data,
-      dataLength: JSON.stringify(data).length,
-      hasConnections: data?.connections?.length || 0,
-      hasStations: data?.stations?.length || 0,
-    };
 
     // Log to console in development (simplified)
     if (__DEV__) {
@@ -37,13 +25,6 @@ class ResponseLogger {
   }
 
   logError(url: string, error: any) {
-    const timestamp = new Date().toISOString();
-    const logEntry = {
-      timestamp,
-      url,
-      error: error.message || error.toString(),
-      stack: error.stack,
-    };
 
     if (__DEV__) {
       console.log('=== API Error Log ===');
@@ -51,7 +32,7 @@ class ResponseLogger {
       console.log('Error:', error.message || error.toString());
     }
 
-    console.log('ERROR_LOG:', JSON.stringify(logEntry));
+
   }
 }
 

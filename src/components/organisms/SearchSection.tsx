@@ -1,8 +1,7 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { StyleSheet } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { SearchBar } from '../ui/SearchBar';
-import { spacing } from '~/utils/responsive';
 import { LAYOUT } from '~/utils/layout';
 
 interface SearchSectionProps {

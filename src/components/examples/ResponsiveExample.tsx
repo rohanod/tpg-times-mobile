@@ -96,7 +96,7 @@ export const ResponsiveExample: React.FC = () => {
           </Text>
           <Text style={[styles.responsiveBody, { color: theme.textSecondary }]}>
             This text automatically adjusts its size based on the device. 
-            On tablets it's larger, on small devices it's optimized for readability, 
+            On tablets it&apos;s larger, on small devices it&apos;s optimized for readability, 
             and spacing adjusts accordingly.
           </Text>
         </View>

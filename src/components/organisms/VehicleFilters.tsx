@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import { FlatList, StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { VehicleFilterInput } from '../molecules/VehicleFilterInput';
 import { FilterChip } from '../ui/FilterChip';
-import { spacing } from '~/utils/responsive';
 import { LAYOUT } from '~/utils/layout';
 
 interface VehicleFiltersProps {

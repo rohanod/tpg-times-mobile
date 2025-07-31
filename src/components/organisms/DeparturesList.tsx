@@ -2,12 +2,10 @@ import React from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useSettings } from '~/hooks/useSettings';
-import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { DepartureCard } from '../molecules/DepartureCard';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { ErrorMessage } from '../ui/ErrorMessage';
 import { EmptyState } from '../ui/EmptyState';
-import { spacing, borderRadius, getResponsiveValue } from '~/utils/responsive';
+import { spacing, borderRadius } from '~/utils/responsive';
 import { LAYOUT } from '~/utils/layout';
 import type { GroupedDeparture } from '~/services/DepartureService';
 
@@ -15,10 +13,8 @@ interface DeparturesListProps {
   departures: GroupedDeparture[];
   vehicleOrder: string[];
   loading: boolean;
-  error: string | null;
   refreshing: boolean;
   onRefresh: () => void;
-  onRetryError?: () => void;
   animatedStyle?: any;
 }
 
@@ -26,14 +22,11 @@ export const DeparturesList: React.FC<DeparturesListProps> = ({
   departures,
   vehicleOrder,
   loading,
-  error,
   refreshing,
   onRefresh,
-  onRetryError,
   animatedStyle,
 }) => {
   const { darkMode, language } = useSettings();
-  const theme = getResponsiveTheme(darkMode);
   const departureCardsVisible = useSharedValue(true);
 
   const sortedDepartures = departures.sort((a, b) => {
@@ -66,15 +59,6 @@ export const DeparturesList: React.FC<DeparturesListProps> = ({
             text={language === 'en' ? 'Loading departures...' : 'Chargement des départs...'}
           />
         </View>
-      );
-    }
-
-    if (error) {
-      return (
-        <ErrorMessage
-          message={error}
-          onRetry={onRetryError}
-        />
       );
     }
 

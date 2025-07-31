@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { Plus } from 'lucide-react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSettings } from '~/hooks/useSettings';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { spacing, borderRadius, typography, scaleWidth } from '~/utils/responsive';
@@ -21,8 +21,8 @@ export const VehicleFilterInput: React.FC<VehicleFilterInputProps> = ({
   const { darkMode, language } = useSettings();
   const theme = getResponsiveTheme(darkMode);
 
-  const defaultPlaceholder = language === 'en' 
-    ? 'Filter by vehicle number...' 
+  const defaultPlaceholder = language === 'en'
+    ? 'Filter by vehicle number...'
     : 'Filtrer par numéro...';
 
   return (
@@ -41,7 +41,7 @@ export const VehicleFilterInput: React.FC<VehicleFilterInputProps> = ({
         style={[styles.addButton, { backgroundColor: theme.primary }]}
         onPress={onSubmit}
       >
-        <Plus size={scaleWidth(16)} color="white" />
+        <MaterialIcons name="add" size={scaleWidth(16)} color="white" />
       </TouchableOpacity>
     </View>
   );
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   addButton: {
     width: scaleWidth(32),
     height: scaleWidth(32),
-    borderRadius: borderRadius.sm,
+    borderRadius: borderRadius.lg,
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { X } from 'lucide-react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSettings } from '~/hooks/useSettings';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { spacing, borderRadius, scaleFont, scaleWidth } from '~/utils/responsive';
@@ -23,7 +23,7 @@ export const FilterChip: React.FC<FilterChipProps> = ({
     <View style={[styles.container, { backgroundColor: color || theme.primary }]}>
       <Text style={styles.label}>{label}</Text>
       <TouchableOpacity onPress={onRemove} style={styles.removeButton}>
-        <X size={14} color="white" />
+        <MaterialIcons name="close" size={14} color="white" />
       </TouchableOpacity>
     </View>
   );

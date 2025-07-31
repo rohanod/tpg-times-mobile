@@ -1,10 +1,10 @@
 import React from 'react';
 import { FlatList, StyleSheet } from 'react-native';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSettings } from '~/hooks/useSettings';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { StopSuggestion } from '../molecules/StopSuggestion';
-import { spacing, borderRadius, getResponsiveValue, scaleHeight } from '~/utils/responsive';
+import { borderRadius, scaleHeight } from '~/utils/responsive';
 import { LAYOUT } from '~/utils/layout';
 import type { Stop } from '~/services/DepartureService';
 

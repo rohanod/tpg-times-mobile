@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
-import { Bus, Settings } from 'lucide-react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS } from '../../config/theme';
 import { useSettings } from '../../hooks/useSettings';
 import { scaleHeight, scaleWidth, isTablet } from '../../utils/responsive';
@@ -32,14 +32,14 @@ export default function TabLayout() {
         name="index"
         options={{
           title: language === 'en' ? 'Home' : 'Accueil',
-          tabBarIcon: ({ color, size }) => <Bus size={scaleWidth(size)} color={color} />,
+          tabBarIcon: ({ color, size }) => <MaterialIcons name="directions-bus" size={scaleWidth(size)} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: language === 'en' ? 'Settings' : 'Paramètres',
-          tabBarIcon: ({ color, size }) => <Settings size={scaleWidth(size)} color={color} />,
+          tabBarIcon: ({ color, size }) => <MaterialIcons name="settings" size={scaleWidth(size)} color={color} />,
         }}
       />
     </Tabs>

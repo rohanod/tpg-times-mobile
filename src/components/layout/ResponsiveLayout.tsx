@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '~/hooks/useSettings';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { useResponsiveLayout } from '~/hooks/useResponsiveLayout';
@@ -17,7 +17,7 @@ export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   const { darkMode } = useSettings();
   const theme = getResponsiveTheme(darkMode);
   const layout = useResponsiveLayout();
-  const insets = useSafeAreaInsets();
+
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>

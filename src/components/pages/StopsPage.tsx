@@ -1,14 +1,11 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import {
-  StyleSheet,
   Keyboard,
-  Alert,
 } from 'react-native';
-import Animated, {
+import {
   useSharedValue,
   useAnimatedStyle,
-  useAnimatedReaction,
   withTiming,
   withDelay,
   Easing,
@@ -18,8 +15,6 @@ import { useSettings } from '~/hooks/useSettings';
 import { useArretsCsv } from '~/hooks/useArretsCsv';
 import { useCurrentStop } from '~/hooks/useCurrentStop';
 import { useDepartureService } from '~/hooks/useDepartureService';
-import { useResponsiveLayout } from '~/hooks/useResponsiveLayout';
-import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import DepartureService, { type Stop } from '~/services/DepartureService';
 import { 
   screenDimensions, 
@@ -32,11 +27,10 @@ import { VehicleFilters } from '../organisms/VehicleFilters';
 import { DeparturesList } from '../organisms/DeparturesList';
 import { ResponsiveLayout } from '../layout/ResponsiveLayout';
 import { PageHeader } from '../layout/PageHeader';
+import { Toast } from '../Toast';
 
 export const StopsPage: React.FC = () => {
-  const { language, darkMode } = useSettings();
-  const responsiveLayout = useResponsiveLayout();
-  const theme = getResponsiveTheme(darkMode);
+  const { language } = useSettings();
 
   // State management
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,6 +42,25 @@ export const StopsPage: React.FC = () => {
   const [vehicleNumberFilters, setVehicleNumberFilters] = useState<string[]>([]);
   const [locationLoading, setLocationLoading] = useState(false);
   const [vehicleOrder, setVehicleOrder] = useState<string[]>([]);
+  
+  // Toast state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'error' | 'warning' | 'info'>('error');
+
+  // Toast helper function
+  const showToast = useCallback((message: string, type: 'error' | 'warning' | 'info' = 'error') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  }, []);
+
+  // Watch for departure errors and show toast
+  useEffect(() => {
+    if (departuresError) {
+      showToast(departuresError, 'error');
+    }
+  }, [departuresError, showToast]);
 
   // Animated Values
   const animationProgress = useSharedValue(0);
@@ -122,7 +135,7 @@ export const StopsPage: React.FC = () => {
 
     searchEntranceProgress.value = withDelay(200, withTiming(1, { duration, easing }));
     filtersEntranceProgress.value = withDelay(400, withTiming(1, { duration, easing }));
-  }, []);
+  }, [searchEntranceProgress, filtersEntranceProgress]);
 
   // Focus animations
   useEffect(() => {
@@ -144,7 +157,7 @@ export const StopsPage: React.FC = () => {
       });
       departureCardsVisible.value = withDelay(600, withTiming(1, { duration: 0 }));
     }
-  }, [inputFocused, departures.length]);
+  }, [inputFocused, departures.length, animationProgress, departureCardsVisible]);
 
   // Search functionality
   const handleSearch = useCallback(async (query: string) => {
@@ -156,8 +169,7 @@ export const StopsPage: React.FC = () => {
     try {
       const results = await departureService.current.getStopSuggestions(query);
       setSuggestions(results);
-    } catch (error) {
-      console.error('Search error:', error);
+    } catch {
       setSuggestions([]);
     } finally {
       setSearchLoading(false);
@@ -217,23 +229,23 @@ export const StopsPage: React.FC = () => {
       if (nearestStop && !('error' in nearestStop)) {
         await handleStopSelect({ id: nearestStop.id, rawName: nearestStop.name });
       } else {
-        Alert.alert(
-          language === 'en' ? 'No Stops Found' : 'Aucun arrêt trouvé',
-          language === 'en' ? 'No stops found nearby' : 'Aucun arrêt trouvé à proximité'
+        showToast(
+          language === 'en' ? 'No stops found nearby' : 'Aucun arrêt trouvé à proximité',
+          'warning'
         );
       }
     } catch (error) {
       console.error('Error finding nearest stop:', error);
-      Alert.alert(
-        language === 'en' ? 'Error' : 'Erreur',
+      showToast(
         language === 'en'
           ? 'Error detecting location'
-          : 'Erreur lors de la détection de la position'
+          : 'Erreur lors de la détection de la position',
+        'error'
       );
     } finally {
       setLocationLoading(false);
     }
-  }, [findNearestStop, handleStopSelect, language, locationLoading, searchLoading]);
+  }, [findNearestStop, handleStopSelect, language, locationLoading, searchLoading, showToast]);
 
   // Vehicle filter management
   const addVehicleNumberFilter = useCallback(() => {
@@ -265,15 +277,15 @@ export const StopsPage: React.FC = () => {
     if (!selectedStop) return;
     try {
       await manualRefresh();
-    } catch (error) {
-      Alert.alert(
-        language === 'en' ? 'Refresh Error' : 'Erreur de rafraîchissement',
+    } catch {
+      showToast(
         language === 'en'
           ? 'Failed to refresh departures'
-          : 'Échec du rafraîchissement des départs'
+          : 'Échec du rafraîchissement des départs',
+        'error'
       );
     }
-  }, [selectedStop, manualRefresh, language]);
+  }, [selectedStop, manualRefresh, language, showToast]);
 
   // Initialize with current stop
   useEffect(() => {
@@ -365,16 +377,20 @@ export const StopsPage: React.FC = () => {
           departures={departures}
           vehicleOrder={vehicleOrder}
           loading={departuresLoading}
-          error={departuresError}
           refreshing={refreshing}
           onRefresh={handleManualRefresh}
           animatedStyle={animatedDeparturesStyle}
         />
       )}
+
+      {/* Toast */}
+      <Toast
+        message={toastMessage}
+        type={toastType}
+        visible={toastVisible}
+        onHide={() => setToastVisible(false)}
+      />
     </ResponsiveLayout>
   );
 };
 
-const styles = StyleSheet.create({
-  // Styles moved to layout components
-});

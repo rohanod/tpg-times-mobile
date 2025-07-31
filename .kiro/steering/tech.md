@@ -13,7 +13,7 @@
 - **@gorhom/bottom-sheet** - Native bottom sheet component
 - **expo-location** - Location services
 - **moment-timezone** - Date/time handling with timezone support
-- **lucide-react-native** - Icon library
+- **@expo/vector-icons** - Icon library (MaterialIcons)
 - **@react-native-async-storage/async-storage** - Local storage
 
 ## Build System

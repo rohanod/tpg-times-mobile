@@ -140,11 +140,12 @@ export function useDepartureService(): UseDepartureServiceReturn {
 
   // Cleanup on unmount
   useEffect(() => {
+    const currentService = departureService.current;
     return () => {
       if (__DEV__) {
         console.log('Cleaning up departure service');
       }
-      departureService.current.cleanup();
+      currentService.cleanup();
     };
   }, []);
 

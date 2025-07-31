@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { AlertCircle, RefreshCw } from 'lucide-react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSettings } from '~/hooks/useSettings';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { spacing, borderRadius, typography, scaleWidth } from '~/utils/responsive';
@@ -24,7 +24,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
   return (
     <View style={[styles.container, { backgroundColor: theme.surface }]}>
       <View style={styles.content}>
-        <AlertCircle size={scaleWidth(24)} color="#FF3B30" />
+        <MaterialIcons name="error-outline" size={scaleWidth(24)} color="#FF3B30" />
         <Text style={[styles.message, { color: '#FF3B30' }]}>{message}</Text>
       </View>
       {onRetry && (
@@ -32,7 +32,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
           style={[styles.retryButton, { borderColor: theme.border }]}
           onPress={onRetry}
         >
-          <RefreshCw size={scaleWidth(16)} color={theme.primary} />
+          <MaterialIcons name="refresh" size={scaleWidth(16)} color={theme.primary} />
           <Text style={[styles.retryText, { color: theme.primary }]}>
             {displayRetryText}
           </Text>

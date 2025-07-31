@@ -20,7 +20,7 @@ interface DepartureCardProps {
   isVisible: Animated.SharedValue<boolean>;
 }
 
-export const DepartureCard: React.FC<DepartureCardProps> = React.memo(({
+const DepartureCardComponent: React.FC<DepartureCardProps> = ({
   departure,
   index,
   isVisible,
@@ -102,7 +102,11 @@ export const DepartureCard: React.FC<DepartureCardProps> = React.memo(({
       </View>
     </Animated.View>
   );
-});
+};
+
+DepartureCardComponent.displayName = 'DepartureCard';
+
+export const DepartureCard = React.memo(DepartureCardComponent);
 
 const styles = StyleSheet.create({
   container: {
