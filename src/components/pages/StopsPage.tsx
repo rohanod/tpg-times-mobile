@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useFocusEffect } from 'expo-router';
 import {
   Keyboard,
 } from 'react-native';
@@ -37,6 +36,7 @@ export const StopsPage: React.FC = () => {
   const [suggestions, setSuggestions] = useState<Stop[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
+  const [vehicleFilterFocused, setVehicleFilterFocused] = useState(false);
   const [selectedStop, setSelectedStop] = useState<Stop | null>(null);
   const [vehicleNumberInput, setVehicleNumberInput] = useState('');
   const [vehicleNumberFilters, setVehicleNumberFilters] = useState<string[]>([]);
@@ -55,22 +55,17 @@ export const StopsPage: React.FC = () => {
     setToastVisible(true);
   }, []);
 
-  // Watch for departure errors and show toast
-  useEffect(() => {
-    if (departuresError) {
-      showToast(departuresError, 'error');
-    }
-  }, [departuresError, showToast]);
-
   // Animated Values
   const animationProgress = useSharedValue(0);
   const searchEntranceProgress = useSharedValue(0);
   const filtersEntranceProgress = useSharedValue(0);
-  const departureCardsVisible = useSharedValue(true);
+  const departureCardsVisible = useSharedValue(1);
+  const vehicleFilterMoveUpProgress = useSharedValue(0);
 
   // Refs
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const departureService = useRef(DepartureService.getInstance());
+  const vehicleFilterFocusedRef = useRef(false);
 
   // Hooks
   const { currentStop, setCurrentStop } = useCurrentStop();
@@ -87,21 +82,35 @@ export const StopsPage: React.FC = () => {
     manualRefresh,
   } = useDepartureService();
 
+  // Watch for departure errors and show toast
+  useEffect(() => {
+    if (departuresError) {
+      showToast(departuresError, 'error');
+    }
+  }, [departuresError, showToast]);
+
   // Keyboard listeners
-  useFocusEffect(
-    React.useCallback(() => {
-      const onKeyboardShow = () => setInputFocused(true);
-      const onKeyboardHide = () => setInputFocused(false);
+  useEffect(() => {
+    const onKeyboardShow = () => {
+      // Only set inputFocused if vehicle filter is not focused
+      if (!vehicleFilterFocusedRef.current) {
+        setInputFocused(true);
+      }
+    };
+    const onKeyboardHide = () => {
+      setInputFocused(false);
+      vehicleFilterFocusedRef.current = false;
+      setVehicleFilterFocused(false);
+    };
 
-      const showSubscription = Keyboard.addListener('keyboardDidShow', onKeyboardShow);
-      const hideSubscription = Keyboard.addListener('keyboardDidHide', onKeyboardHide);
+    const showSubscription = Keyboard.addListener('keyboardDidShow', onKeyboardShow);
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', onKeyboardHide);
 
-      return () => {
-        showSubscription.remove();
-        hideSubscription.remove();
-      };
-    }, [])
-  );
+    return () => {
+      showSubscription?.remove();
+      hideSubscription?.remove();
+    };
+  }, []);
 
   // Animation styles
   const animatedSearchEntranceStyle = useAnimatedStyle(() => ({
@@ -128,6 +137,15 @@ export const StopsPage: React.FC = () => {
     opacity: animationProgress.value,
   }));
 
+  const animatedSearchHideStyle = useAnimatedStyle(() => ({
+    opacity: 1 - vehicleFilterMoveUpProgress.value,
+    transform: [{ translateY: -vehicleFilterMoveUpProgress.value * 60 }],
+  }));
+
+  const animatedVehicleFilterMoveUpStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -vehicleFilterMoveUpProgress.value * 80 }],
+  }));
+
   // Entrance animations
   useEffect(() => {
     const duration = 800;
@@ -142,7 +160,7 @@ export const StopsPage: React.FC = () => {
     const shouldSlideDown = inputFocused;
 
     if (shouldSlideDown) {
-      departureCardsVisible.value = false;
+      departureCardsVisible.value = 0;
       const maxCardDelay = departures.length > 0 ? (departures.length - 1) * 50 + 300 : 0;
       const borderDelay = maxCardDelay + 100;
 
@@ -158,6 +176,21 @@ export const StopsPage: React.FC = () => {
       departureCardsVisible.value = withDelay(600, withTiming(1, { duration: 0 }));
     }
   }, [inputFocused, departures.length, animationProgress, departureCardsVisible]);
+
+  // Vehicle filter focus animations
+  useEffect(() => {
+    if (vehicleFilterFocused) {
+      vehicleFilterMoveUpProgress.value = withTiming(1, {
+        duration: 400,
+        easing: Easing.inOut(Easing.ease)
+      });
+    } else {
+      vehicleFilterMoveUpProgress.value = withTiming(0, {
+        duration: 400,
+        easing: Easing.inOut(Easing.ease)
+      });
+    }
+  }, [vehicleFilterFocused, vehicleFilterMoveUpProgress]);
 
   // Search functionality
   const handleSearch = useCallback(async (query: string) => {
@@ -272,6 +305,17 @@ export const StopsPage: React.FC = () => {
     [vehicleNumberFilters, selectedStop, startAutoRefresh]
   );
 
+  // Vehicle filter focus handlers
+  const handleVehicleFilterFocus = useCallback(() => {
+    vehicleFilterFocusedRef.current = true;
+    setVehicleFilterFocused(true);
+  }, []);
+
+  const handleVehicleFilterBlur = useCallback(() => {
+    vehicleFilterFocusedRef.current = false;
+    setVehicleFilterFocused(false);
+  }, []);
+
   // Manual refresh
   const handleManualRefresh = useCallback(async () => {
     if (!selectedStop) return;
@@ -350,7 +394,7 @@ export const StopsPage: React.FC = () => {
             onLocationPress={findNearestStopLocation}
             searchLoading={searchLoading}
             locationLoading={locationLoading}
-            animatedStyle={animatedSearchEntranceStyle}
+            animatedStyle={[animatedSearchEntranceStyle, animatedSearchHideStyle]}
           />
 
           {/* Suggestions */}
@@ -368,7 +412,9 @@ export const StopsPage: React.FC = () => {
             onAddFilter={addVehicleNumberFilter}
             filters={vehicleNumberFilters}
             onRemoveFilter={removeVehicleNumberFilter}
-            animatedStyle={[animatedFiltersStyle, animatedFiltersEntranceStyle]}
+            onVehicleFilterFocus={handleVehicleFilterFocus}
+            onVehicleFilterBlur={handleVehicleFilterBlur}
+            animatedStyle={[animatedFiltersStyle, animatedFiltersEntranceStyle, animatedVehicleFilterMoveUpStyle]}
           />
 
       {/* Departures List */}

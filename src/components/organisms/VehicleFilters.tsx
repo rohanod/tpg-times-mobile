@@ -11,6 +11,8 @@ interface VehicleFiltersProps {
   onAddFilter: () => void;
   filters: string[];
   onRemoveFilter: (filter: string) => void;
+  onVehicleFilterFocus?: () => void;
+  onVehicleFilterBlur?: () => void;
   animatedStyle?: any;
 }
 
@@ -20,6 +22,8 @@ export const VehicleFilters: React.FC<VehicleFiltersProps> = ({
   onAddFilter,
   filters,
   onRemoveFilter,
+  onVehicleFilterFocus,
+  onVehicleFilterBlur,
   animatedStyle,
 }) => {
   const renderFilter = ({ item }: { item: string }) => (

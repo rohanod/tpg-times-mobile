@@ -9,6 +9,8 @@ interface VehicleFilterInputProps {
   value: string;
   onChangeText: (text: string) => void;
   onSubmit: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
   placeholder?: string;
 }
 
@@ -16,6 +18,8 @@ export const VehicleFilterInput: React.FC<VehicleFilterInputProps> = ({
   value,
   onChangeText,
   onSubmit,
+  onFocus,
+  onBlur,
   placeholder,
 }) => {
   const { darkMode, language } = useSettings();
