@@ -39,6 +39,8 @@ export const VehicleFilters: React.FC<VehicleFiltersProps> = ({
         value={vehicleNumberInput}
         onChangeText={onVehicleNumberInputChange}
         onSubmit={onAddFilter}
+        onFocus={onVehicleFilterFocus}
+        onBlur={onVehicleFilterBlur}
       />
 
       {filters.length > 0 && (

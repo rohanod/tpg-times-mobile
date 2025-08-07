@@ -38,6 +38,8 @@ export const VehicleFilterInput: React.FC<VehicleFilterInputProps> = ({
         value={value}
         onChangeText={onChangeText}
         onSubmitEditing={onSubmit}
+        onFocus={onFocus}
+        onBlur={onBlur}
         returnKeyType="done"
         keyboardType="number-pad"
       />
