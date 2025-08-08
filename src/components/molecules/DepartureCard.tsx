@@ -11,7 +11,7 @@ import Animated, {
 import { useSettings } from '~/hooks/useSettings';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { formatTime } from '~/utils/formatTime';
-import { spacing, borderRadius, typography, scaleWidth, scaleFont } from '~/utils/responsive';
+import { spacing, borderRadius, typography, scaleWidth, scaleFont, scaleHeight } from '~/utils/responsive';
 import type { GroupedDeparture } from '~/services/DepartureService';
 
 interface DepartureCardProps {
@@ -112,30 +112,31 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
     marginBottom: spacing.sm,
     gap: spacing.md,
+    minHeight: scaleHeight(100),
   },
   vehicleIcon: {
-    width: scaleWidth(40),
-    height: scaleWidth(40),
+    width: scaleWidth(52),
+    height: scaleWidth(52),
     borderRadius: borderRadius.sm,
     justifyContent: 'center',
     alignItems: 'center',
   },
   vehicleNumber: {
     color: 'white',
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(18),
     fontWeight: 'bold',
   },
   departureInfo: {
     flex: 1,
   },
   vehicleType: {
-    ...typography.body,
+    ...typography.subtitle,
     fontWeight: '600',
     marginBottom: spacing.xs,
   },
@@ -143,28 +144,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xs / 2,
+    marginBottom: spacing.sm,
   },
   destinationText: {
-    ...typography.caption,
+    ...typography.body,
     flex: 1,
     marginRight: spacing.sm,
   },
   timesContainer: {
     flexDirection: 'row',
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   timeChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs / 2,
+    gap: spacing.xs,
   },
   timeText: {
-    ...typography.caption,
+    ...typography.body,
     fontWeight: '500',
   },
   delayText: {
-    fontSize: scaleFont(12),
+    fontSize: scaleFont(14),
     color: '#FF3B30',
     fontWeight: '500',
   },
