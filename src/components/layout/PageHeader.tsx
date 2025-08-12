@@ -25,7 +25,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       styles.container,
       {
         paddingHorizontal: LAYOUT.CONTAINER_PADDING,
-        paddingTop: LAYOUT.SECTION_GAP,
+        paddingTop: 0, // Remove top padding to maximize space
         paddingBottom: LAYOUT.SECTION_GAP,
         minHeight: LAYOUT.HEADER_HEIGHT,
       }
@@ -45,7 +45,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             { color: theme.textSecondary, marginTop: theme.spacing.xs / 2 }
           ]}>
             {subtitle}
-          </Text>
+        </Text>
         )}
       </View>
       {rightElement && (

@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   Keyboard,
+  View,
+  StyleSheet,
 } from 'react-native';
 import {
   useSharedValue,
@@ -8,6 +10,7 @@ import {
   withTiming,
   withDelay,
   Easing,
+  useAnimatedReaction,
 } from 'react-native-reanimated';
 
 import { useSettings } from '~/hooks/useSettings';
@@ -21,7 +24,6 @@ import {
 } from '~/utils/responsive';
 
 import { SearchSection } from '../organisms/SearchSection';
-import { SuggestionsList } from '../organisms/SuggestionsList';
 import { VehicleFilters } from '../organisms/VehicleFilters';
 import { DeparturesList } from '../organisms/DeparturesList';
 import { ResponsiveLayout } from '../layout/ResponsiveLayout';
@@ -33,8 +35,7 @@ export const StopsPage: React.FC = () => {
 
   // State management
   const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<Stop[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
+  // Suggestions disabled
   const [inputFocused, setInputFocused] = useState(false);
   const [vehicleFilterFocused, setVehicleFilterFocused] = useState(false);
   const [selectedStop, setSelectedStop] = useState<Stop | null>(null);
@@ -59,11 +60,12 @@ export const StopsPage: React.FC = () => {
   const animationProgress = useSharedValue(0);
   const searchEntranceProgress = useSharedValue(0);
   const filtersEntranceProgress = useSharedValue(0);
+  const departuresEntranceProgress = useSharedValue(0);
   const departureCardsVisible = useSharedValue(1);
   const vehicleFilterMoveUpProgress = useSharedValue(0);
 
   // Refs
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // No suggestion debounce needed
   const departureService = useRef(DepartureService.getInstance());
   const vehicleFilterFocusedRef = useRef(false);
 
@@ -132,6 +134,12 @@ export const StopsPage: React.FC = () => {
     transform: [{ translateY: animationProgress.value * screenDimensions.height }],
   }));
 
+  // Initial entrance for departures: slide up from bottom and fade in
+  const animatedDeparturesEntranceStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: (1 - departuresEntranceProgress.value) * screenDimensions.height }],
+    opacity: departuresEntranceProgress.value,
+  }));
+
   const animatedSuggestionsStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: (1 - animationProgress.value) * -animations.translate.large * 4 }],
     opacity: animationProgress.value,
@@ -154,6 +162,22 @@ export const StopsPage: React.FC = () => {
     searchEntranceProgress.value = withDelay(200, withTiming(1, { duration, easing }));
     filtersEntranceProgress.value = withDelay(400, withTiming(1, { duration, easing }));
   }, [searchEntranceProgress, filtersEntranceProgress]);
+
+  // Start departures entrance as soon as both search and filters are fully on screen
+  useAnimatedReaction(
+    () => {
+      'worklet';
+      return searchEntranceProgress.value >= 1 && filtersEntranceProgress.value >= 1;
+    },
+    (ready, wasReady) => {
+      'worklet';
+      if (ready && !wasReady && departuresEntranceProgress.value < 1) {
+        const duration = 700;
+        const easing = Easing.out(Easing.exp);
+        departuresEntranceProgress.value = withTiming(1, { duration, easing });
+      }
+    }
+  );
 
   // Focus animations
   useEffect(() => {
@@ -192,42 +216,15 @@ export const StopsPage: React.FC = () => {
     }
   }, [vehicleFilterFocused, vehicleFilterMoveUpProgress]);
 
-  // Search functionality
-  const handleSearch = useCallback(async (query: string) => {
-    if (!query || query.trim().length < 2) {
-      setSuggestions([]);
-      return;
-    }
-    setSearchLoading(true);
-    try {
-      const results = await departureService.current.getStopSuggestions(query);
-      setSuggestions(results);
-    } catch {
-      setSuggestions([]);
-    } finally {
-      setSearchLoading(false);
-    }
-  }, []);
-
   const onSearchChange = useCallback(
     (text: string) => {
       setSearchQuery(text);
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-      searchTimeoutRef.current = setTimeout(() => {
-        handleSearch(text);
-      }, 300);
     },
-    [handleSearch]
+    []
   );
 
   const clearSearch = useCallback(() => {
     setSearchQuery('');
-    setSuggestions([]);
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
   }, []);
 
   // Stop selection
@@ -235,14 +232,9 @@ export const StopsPage: React.FC = () => {
     async (stop: Stop) => {
       setSelectedStop(stop);
       setCurrentStop(stop);
-      setSuggestions([]);
       setInputFocused(false);
       Keyboard.dismiss();
       setSearchQuery('');
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-        searchTimeoutRef.current = null;
-      }
       try {
         await fetchDepartures(stop, vehicleNumberFilters);
         startAutoRefresh(stop, vehicleNumberFilters);
@@ -255,7 +247,7 @@ export const StopsPage: React.FC = () => {
 
   // Location detection
   const findNearestStopLocation = useCallback(async () => {
-    if (locationLoading || searchLoading) return;
+    if (locationLoading) return;
     setLocationLoading(true);
     try {
       const nearestStop = await findNearestStop();
@@ -278,7 +270,7 @@ export const StopsPage: React.FC = () => {
     } finally {
       setLocationLoading(false);
     }
-  }, [findNearestStop, handleStopSelect, language, locationLoading, searchLoading, showToast]);
+  }, [findNearestStop, handleStopSelect, language, locationLoading, showToast]);
 
   // Vehicle filter management
   const addVehicleNumberFilter = useCallback(() => {
@@ -350,9 +342,6 @@ export const StopsPage: React.FC = () => {
   useEffect(() => {
     return () => {
       stopAutoRefresh();
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
     };
   }, [stopAutoRefresh]);
 
@@ -379,55 +368,47 @@ export const StopsPage: React.FC = () => {
 
   return (
     <ResponsiveLayout>
-      {/* Header */}
-      <PageHeader
-        title={language === 'en' ? 'TPG Times' : 'Horaires TPG'}
-      />
+      <View style={styles.container}>
+        {/* Header */}
+        <PageHeader
+          title={language === 'en' ? 'TPG Times' : 'Horaires TPG'}
+        />
 
-          {/* Search Section */}
-          <SearchSection
-            searchQuery={searchQuery}
-            onSearchChange={onSearchChange}
-            onSearchFocus={() => setInputFocused(true)}
-            onSearchBlur={() => setInputFocused(false)}
-            onClearSearch={clearSearch}
-            onLocationPress={findNearestStopLocation}
-            searchLoading={searchLoading}
-            locationLoading={locationLoading}
-            animatedStyle={[animatedSearchEntranceStyle, animatedSearchHideStyle]}
-          />
+        {/* Search Section */}
+        <SearchSection
+          searchQuery={searchQuery}
+          onSearchChange={onSearchChange}
+          onSearchFocus={() => setInputFocused(true)}
+          onSearchBlur={() => setInputFocused(false)}
+          onClearSearch={clearSearch}
+          onLocationPress={findNearestStopLocation}
+          searchLoading={false}
+          locationLoading={locationLoading}
+          animatedStyle={[animatedSearchEntranceStyle, animatedSearchHideStyle]}
+        />
 
-          {/* Suggestions */}
-          <SuggestionsList
-            suggestions={suggestions}
-            onStopSelect={handleStopSelect}
-            visible={inputFocused && suggestions.length > 0}
-            animatedStyle={animatedSuggestionsStyle}
-          />
+        {/* Vehicle Filters */}
+        <VehicleFilters
+          vehicleNumberInput={vehicleNumberInput}
+          onVehicleNumberInputChange={setVehicleNumberInput}
+          onAddFilter={addVehicleNumberFilter}
+          filters={vehicleNumberFilters}
+          onRemoveFilter={removeVehicleNumberFilter}
+          onVehicleFilterFocus={handleVehicleFilterFocus}
+          onVehicleFilterBlur={handleVehicleFilterBlur}
+          animatedStyle={[animatedFiltersStyle, animatedFiltersEntranceStyle, animatedVehicleFilterMoveUpStyle]}
+        />
 
-          {/* Vehicle Filters */}
-          <VehicleFilters
-            vehicleNumberInput={vehicleNumberInput}
-            onVehicleNumberInputChange={setVehicleNumberInput}
-            onAddFilter={addVehicleNumberFilter}
-            filters={vehicleNumberFilters}
-            onRemoveFilter={removeVehicleNumberFilter}
-            onVehicleFilterFocus={handleVehicleFilterFocus}
-            onVehicleFilterBlur={handleVehicleFilterBlur}
-            animatedStyle={[animatedFiltersStyle, animatedFiltersEntranceStyle, animatedVehicleFilterMoveUpStyle]}
-          />
-
-      {/* Departures List */}
-      {selectedStop && (
+        {/* Departures List - now using flex to fill remaining space */}
         <DeparturesList
           departures={departures}
           vehicleOrder={vehicleOrder}
           loading={departuresLoading}
           refreshing={refreshing}
           onRefresh={handleManualRefresh}
-          animatedStyle={animatedDeparturesStyle}
+          animatedStyle={[animatedDeparturesEntranceStyle, animatedDeparturesStyle]}
         />
-      )}
+      </View>
 
       {/* Toast */}
       <Toast
@@ -439,4 +420,10 @@ export const StopsPage: React.FC = () => {
     </ResponsiveLayout>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
 

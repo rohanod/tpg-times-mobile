@@ -60,8 +60,8 @@ export const VehicleFilters: React.FC<VehicleFiltersProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: LAYOUT.CONTAINER_PADDING,
-    paddingTop: LAYOUT.SECTION_GAP,
-    paddingBottom: LAYOUT.SECTION_GAP,
+    paddingTop: 0, // Remove top padding to maximize space
+    paddingBottom: 0, // Remove bottom padding so departures can touch it
   },
   filtersRow: {
     marginTop: LAYOUT.SECTION_GAP,

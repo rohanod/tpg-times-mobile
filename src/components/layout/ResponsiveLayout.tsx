@@ -18,15 +18,14 @@ export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   const theme = getResponsiveTheme(darkMode);
   const layout = useResponsiveLayout();
 
-
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: theme.background }]}> 
       <View style={[
         styles.content,
         {
-          // Adjust padding based on device type
-          paddingTop: layout.isTablet ? theme.spacing.md : theme.spacing.xs,
-          paddingBottom: showTabBar ? 0 : theme.spacing.sm,
+          // Remove all padding to allow departures to fill all available space
+          paddingTop: 0,
+          paddingBottom: 0, // No bottom padding to allow departures to touch tab bar
         }
       ]}>
         {children}

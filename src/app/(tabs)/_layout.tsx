@@ -20,6 +20,8 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // Remove extra bottom padding applied to scenes so content can get closer to tab bar
+        sceneContainerStyle: { paddingBottom: 0 },
         tabBarStyle: {
           backgroundColor: COLORS.TAB_BAR.BACKGROUND,
           paddingBottom: tabBarPaddingBottom,

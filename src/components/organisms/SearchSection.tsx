@@ -46,7 +46,8 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: LAYOUT.CONTAINER_PADDING,
-    paddingVertical: LAYOUT.SECTION_GAP,
+    paddingTop: 0, // Remove top padding to maximize space
+    paddingBottom: LAYOUT.SECTION_GAP,
     zIndex: 1001,
   },
 });

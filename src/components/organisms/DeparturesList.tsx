@@ -4,7 +4,6 @@ import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useSettings } from '~/hooks/useSettings';
 import { DepartureCard } from '../molecules/DepartureCard';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { EmptyState } from '../ui/EmptyState';
 import { spacing, borderRadius } from '~/utils/responsive';
 import { LAYOUT } from '~/utils/layout';
 import type { GroupedDeparture } from '~/services/DepartureService';
@@ -63,11 +62,8 @@ export const DeparturesList: React.FC<DeparturesListProps> = ({
     }
 
     if (departures.length === 0) {
-      return (
-        <EmptyState
-          title={language === 'en' ? 'No departures found' : 'Aucun départ trouvé'}
-        />
-      );
+      // Blank content when no timings
+      return <View style={styles.blank} />;
     }
 
     return (
@@ -94,6 +90,9 @@ export const DeparturesList: React.FC<DeparturesListProps> = ({
             ? 'rgba(28, 28, 30, 0.95)'
             : 'rgba(255, 255, 255, 0.95)',
           shadowColor: darkMode ? '#000' : '#000',
+          // Fixed minimal gaps
+          marginTop: 10,
+          marginBottom: 10,
         },
         animatedStyle,
       ]}
@@ -105,11 +104,8 @@ export const DeparturesList: React.FC<DeparturesListProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    left: LAYOUT.CONTAINER_PADDING,
-    right: LAYOUT.CONTAINER_PADDING,
-    bottom: spacing.xs,
-    top: LAYOUT.DEPARTURES_TOP,
+    flex: 1,
+    marginHorizontal: LAYOUT.CONTAINER_PADDING,
     borderRadius: borderRadius.xl,
     shadowOffset: {
       width: 0,
@@ -126,6 +122,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   list: {
+    flex: 1,
+  },
+  blank: {
     flex: 1,
   },
 });
