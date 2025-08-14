@@ -17,11 +17,8 @@ import { useSettings } from '~/hooks/useSettings';
 import { useArretsCsv } from '~/hooks/useArretsCsv';
 import { useCurrentStop } from '~/hooks/useCurrentStop';
 import { useDepartureService } from '~/hooks/useDepartureService';
-import DepartureService, { type Stop } from '~/services/DepartureService';
-import { 
-  screenDimensions, 
-  animations
-} from '~/utils/responsive';
+import type { Stop } from '~/services/DepartureService';
+import { screenDimensions } from '~/utils/responsive';
 
 import { SearchSection } from '../organisms/SearchSection';
 import { VehicleFilters } from '../organisms/VehicleFilters';
@@ -66,7 +63,7 @@ export const StopsPage: React.FC = () => {
 
   // Refs
   // No suggestion debounce needed
-  const departureService = useRef(DepartureService.getInstance());
+  // const departureService = useRef(DepartureService.getInstance());
   const vehicleFilterFocusedRef = useRef(false);
 
   // Hooks
@@ -140,10 +137,11 @@ export const StopsPage: React.FC = () => {
     opacity: departuresEntranceProgress.value,
   }));
 
-  const animatedSuggestionsStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: (1 - animationProgress.value) * -animations.translate.large * 4 }],
-    opacity: animationProgress.value,
-  }));
+  // Suggestions disabled currently; keeping style prepared for future use
+  // const animatedSuggestionsStyle = useAnimatedStyle(() => ({
+  //   transform: [{ translateY: (1 - animationProgress.value) * -animations.translate.large * 4 }],
+  //   opacity: animationProgress.value,
+  // }));
 
   const animatedSearchHideStyle = useAnimatedStyle(() => ({
     opacity: 1 - vehicleFilterMoveUpProgress.value,

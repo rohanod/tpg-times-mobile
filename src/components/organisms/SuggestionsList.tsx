@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlatList, StyleSheet } from 'react-native';
+import { FlatList, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSettings } from '~/hooks/useSettings';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
@@ -12,10 +12,10 @@ interface SuggestionsListProps {
   suggestions: Stop[];
   onStopSelect: (stop: Stop) => void;
   visible: boolean;
-  animatedStyle?: any;
+  animatedStyle?: StyleProp<ViewStyle>;
 }
 
-export const SuggestionsList: React.FC<SuggestionsListProps> = ({
+const SuggestionsListComponent: React.FC<SuggestionsListProps> = ({
   suggestions,
   onStopSelect,
   visible,
@@ -55,6 +55,8 @@ export const SuggestionsList: React.FC<SuggestionsListProps> = ({
     </Animated.View>
   );
 };
+
+export const SuggestionsList = React.memo(SuggestionsListComponent);
 
 const styles = StyleSheet.create({
   container: {

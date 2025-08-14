@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlatList, StyleSheet } from 'react-native';
+import { FlatList, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { VehicleFilterInput } from '../molecules/VehicleFilterInput';
 import { FilterChip } from '../ui/FilterChip';
@@ -13,10 +13,10 @@ interface VehicleFiltersProps {
   onRemoveFilter: (filter: string) => void;
   onVehicleFilterFocus?: () => void;
   onVehicleFilterBlur?: () => void;
-  animatedStyle?: any;
+  animatedStyle?: StyleProp<ViewStyle>;
 }
 
-export const VehicleFilters: React.FC<VehicleFiltersProps> = ({
+const VehicleFiltersComponent: React.FC<VehicleFiltersProps> = ({
   vehicleNumberInput,
   onVehicleNumberInputChange,
   onAddFilter,
@@ -56,6 +56,8 @@ export const VehicleFilters: React.FC<VehicleFiltersProps> = ({
     </Animated.View>
   );
 };
+
+export const VehicleFilters = React.memo(VehicleFiltersComponent);
 
 const styles = StyleSheet.create({
   container: {

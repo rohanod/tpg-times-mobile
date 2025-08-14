@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SearchBar } from '../ui/SearchBar';
 import { LAYOUT } from '~/utils/layout';
@@ -13,10 +13,10 @@ interface SearchSectionProps {
   onLocationPress: () => void;
   searchLoading: boolean;
   locationLoading: boolean;
-  animatedStyle?: any;
+  animatedStyle?: StyleProp<ViewStyle>;
 }
 
-export const SearchSection: React.FC<SearchSectionProps> = ({
+const SearchSectionComponent: React.FC<SearchSectionProps> = ({
   searchQuery,
   onSearchChange,
   onSearchFocus,
@@ -42,6 +42,8 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
     </Animated.View>
   );
 };
+
+export const SearchSection = React.memo(SearchSectionComponent);
 
 const styles = StyleSheet.create({
   container: {

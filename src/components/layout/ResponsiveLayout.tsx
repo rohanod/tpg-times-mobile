@@ -3,7 +3,6 @@ import { View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '~/hooks/useSettings';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
-import { useResponsiveLayout } from '~/hooks/useResponsiveLayout';
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -16,7 +15,6 @@ export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
 }) => {
   const { darkMode } = useSettings();
   const theme = getResponsiveTheme(darkMode);
-  const layout = useResponsiveLayout();
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: theme.background }]}> 

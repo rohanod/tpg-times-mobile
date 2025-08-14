@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlatList, View, StyleSheet } from 'react-native';
+import { FlatList, View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useSettings } from '~/hooks/useSettings';
 import { DepartureCard } from '../molecules/DepartureCard';
@@ -14,10 +14,10 @@ interface DeparturesListProps {
   loading: boolean;
   refreshing: boolean;
   onRefresh: () => void;
-  animatedStyle?: any;
+  animatedStyle?: StyleProp<ViewStyle>;
 }
 
-export const DeparturesList: React.FC<DeparturesListProps> = ({
+const DeparturesListComponent: React.FC<DeparturesListProps> = ({
   departures,
   vehicleOrder,
   loading,
@@ -90,7 +90,7 @@ export const DeparturesList: React.FC<DeparturesListProps> = ({
             ? 'rgba(28, 28, 30, 0.95)'
             : 'rgba(255, 255, 255, 0.95)',
           shadowColor: darkMode ? '#000' : '#000',
-          // Fixed minimal gaps
+          // Maintain required 10px gaps above and below
           marginTop: 10,
           marginBottom: 10,
         },
@@ -101,6 +101,8 @@ export const DeparturesList: React.FC<DeparturesListProps> = ({
     </Animated.View>
   );
 };
+
+export const DeparturesList = React.memo(DeparturesListComponent);
 
 const styles = StyleSheet.create({
   container: {

@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSettings } from '~/hooks/useSettings';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
-import { spacing, borderRadius, typography, scaleWidth } from '~/utils/responsive';
+import { Input } from '../ui/Input';
+import { borderRadius, scaleWidth } from '~/utils/responsive';
 
 interface VehicleFilterInputProps {
   value: string;
@@ -14,7 +15,7 @@ interface VehicleFilterInputProps {
   placeholder?: string;
 }
 
-export const VehicleFilterInput: React.FC<VehicleFilterInputProps> = ({
+const VehicleFilterInputComponent: React.FC<VehicleFilterInputProps> = ({
   value,
   onChangeText,
   onSubmit,
@@ -22,7 +23,7 @@ export const VehicleFilterInput: React.FC<VehicleFilterInputProps> = ({
   onBlur,
   placeholder,
 }) => {
-  const { darkMode, language } = useSettings();
+  const { language, darkMode } = useSettings();
   const theme = getResponsiveTheme(darkMode);
 
   const defaultPlaceholder = language === 'en'
@@ -30,42 +31,35 @@ export const VehicleFilterInput: React.FC<VehicleFilterInputProps> = ({
     : 'Filtrer par numéro...';
 
   return (
-    <View style={[styles.container, { borderColor: theme.border }]}>
-      <TextInput
-        style={[styles.input, { color: theme.text }]}
-        placeholder={placeholder || defaultPlaceholder}
-        placeholderTextColor={theme.textSecondary}
-        value={value}
-        onChangeText={onChangeText}
-        onSubmitEditing={onSubmit}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        returnKeyType="done"
-        keyboardType="number-pad"
-      />
-      <TouchableOpacity
-        style={[styles.addButton, { backgroundColor: theme.primary }]}
-        onPress={onSubmit}
-      >
-        <MaterialIcons name="add" size={scaleWidth(16)} color="white" />
-      </TouchableOpacity>
-    </View>
+    <Input
+      value={value}
+      onChangeText={onChangeText}
+      onSubmitEditing={() => onSubmit()}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      placeholder={placeholder || defaultPlaceholder}
+      keyboardType="number-pad"
+      returnKeyType="done"
+      containerStyle={styles.inputContainerStyle}
+      rightIcon={(
+        <TouchableOpacity
+          style={[styles.addButton, { backgroundColor: theme.primary }]}
+          onPress={onSubmit}
+          accessibilityRole="button"
+          accessibilityLabel="Add vehicle filter"
+        >
+          <MaterialIcons name="add" size={scaleWidth(16)} color="white" />
+        </TouchableOpacity>
+      )}
+    />
   );
 };
 
+export const VehicleFilterInput = React.memo(VehicleFilterInputComponent);
+
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: borderRadius.lg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-  },
-  input: {
-    flex: 1,
-    fontSize: typography.body.fontSize,
+  inputContainerStyle: {
+    marginBottom: 0, // Avoid extra spacing to preserve vertical room
   },
   addButton: {
     width: scaleWidth(32),
