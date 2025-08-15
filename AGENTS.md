@@ -30,3 +30,12 @@
 - Always use existing responsive utilities and theme system
 - Follow singleton service patterns for data management
 - Use memo for performance on data-heavy components
+
+## Research & Tooling Workflow
+- DO NOT USE THE FETCH TOOL FOR SEARCH ENGINES EVER.
+- Order of precedence for web research:
+  1) Context7 docs: Use Context7 to search and read framework/library documentation first (resolve library ID, then fetch docs).
+  2) Tavily Search: Use Tavily to search the web (including queries phrased as "google" searches) for broader information and latest context.
+  3) Web Fetch: Only after identifying a specific URL, use fetch to retrieve that exact page for detailed reading. Never use fetch to query search engines.
+- Prioritize official documentation, release notes, and RFCs. Verify versions and APIs against current sources.
+- When fetching a specific page, recursively follow and fetch only directly relevant links as needed to complete the task.
