@@ -29,19 +29,29 @@ const DeparturesListComponent: React.FC<DeparturesListProps> = ({
   const { darkMode, language } = useSettings();
   const departureCardsVisible = useSharedValue(true);
 
-  const sortedDepartures = departures.sort((a, b) => {
-    const aKey = `${a.vehicleType}-${a.number}`;
-    const bKey = `${b.vehicleType}-${b.number}`;
-    const aIndex = vehicleOrder.indexOf(aKey);
-    const bIndex = vehicleOrder.indexOf(bKey);
+  const sortedDepartures = React.useMemo(() => {
+    // First apply user's vehicle filter order if filters are active
+    let sorted = [...departures];
+    
+    if (vehicleOrder.length > 0) {
+      sorted = sorted.sort((a, b) => {
+        const aKey = `${a.vehicleType}-${a.number}`;
+        const bKey = `${b.vehicleType}-${b.number}`;
+        const aIndex = vehicleOrder.indexOf(aKey);
+        const bIndex = vehicleOrder.indexOf(bKey);
 
-    if (aIndex !== -1 && bIndex !== -1) {
-      return aIndex - bIndex;
+        if (aIndex !== -1 && bIndex !== -1) {
+          return aIndex - bIndex;
+        }
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
+        return 0;
+      });
     }
-    if (aIndex !== -1) return -1;
-    if (bIndex !== -1) return 1;
-    return 0;
-  });
+    
+    // If no vehicle filters applied, data is already sorted numerically by DepartureService
+    return sorted;
+  }, [departures, vehicleOrder]);
 
   const [selected, setSelected] = React.useState<GroupedDeparture | null>(null);
   const sheetRef = React.useRef<LineTimesSheetRef>(null);

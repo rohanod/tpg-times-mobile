@@ -319,6 +319,36 @@ class DepartureService {
       );
     }
 
+    // Sort by line number numerically (consistent ordering for each stop session)
+    result.sort((a, b) => {
+      const aNum = parseInt(a.number, 10);
+      const bNum = parseInt(b.number, 10);
+      
+      // If both are numbers, compare numerically
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return aNum - bNum;
+      }
+      
+      // If only one is a number, number comes first
+      if (!isNaN(aNum)) return -1;
+      if (!isNaN(bNum)) return 1;
+      
+      // If neither are numbers, compare alphabetically
+      return a.number.localeCompare(b.number);
+    });
+
+    // Sort destinations alphabetically within each line
+    result.forEach(vehicle => {
+      const sortedDestinations: { [destination: string]: Departure[] } = {};
+      const destinationKeys = Object.keys(vehicle.destinations).sort();
+      
+      destinationKeys.forEach(key => {
+        sortedDestinations[key] = vehicle.destinations[key];
+      });
+      
+      vehicle.destinations = sortedDestinations;
+    });
+
     if (__DEV__) {
       console.log(`Processed ${departures.length} departures into ${result.length} grouped vehicles`);
     }
