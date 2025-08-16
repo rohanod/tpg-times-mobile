@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Text, StyleSheet, Animated } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { borderRadius, spacing, scaleFont, scaleHeight } from '~/utils/responsive';
+
+export type ToastType = 'error' | 'warning' | 'info';
 
 interface ToastProps {
   message: string;
-  type: 'error' | 'warning' | 'info';
+  type: ToastType;
   visible: boolean;
   onHide: () => void;
   duration?: number;
@@ -43,7 +46,7 @@ export const Toast: React.FC<ToastProps> = ({
 
   if (!visible) return null;
 
-  const getBackgroundColor = () => {
+  const getBackgroundColor = (): string => {
     switch (type) {
       case 'error':
         return '#FF3B30';
@@ -53,6 +56,19 @@ export const Toast: React.FC<ToastProps> = ({
         return '#007AFF';
       default:
         return '#FF3B30';
+    }
+  };
+
+  const getIcon = (): keyof typeof MaterialIcons.glyphMap => {
+    switch (type) {
+      case 'error':
+        return 'error';
+      case 'warning':
+        return 'warning-amber';
+      case 'info':
+        return 'info';
+      default:
+        return 'warning-amber';
     }
   };
 
@@ -74,7 +90,7 @@ export const Toast: React.FC<ToastProps> = ({
         },
       ]}
     >
-      <MaterialIcons name="warning-amber" size={20} color="white" />
+      <MaterialIcons name={getIcon()} size={20} color="white" />
       <Text style={styles.message}>{message}</Text>
     </Animated.View>
   );
@@ -83,24 +99,24 @@ export const Toast: React.FC<ToastProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 60,
-    left: 20,
-    right: 20,
+    top: scaleHeight(60),
+    left: spacing.lg,
+    right: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
     zIndex: 9999,
     elevation: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-    gap: 12,
+    gap: spacing.md,
   },
   message: {
     color: 'white',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontWeight: '500',
     flex: 1,
   },

@@ -114,9 +114,6 @@ const DeparturesListComponent: React.FC<DeparturesListProps> = ({
               ? 'rgba(28, 28, 30, 0.95)'
               : 'rgba(255, 255, 255, 0.95)',
             shadowColor: darkMode ? '#000' : '#000',
-            // Maintain required 10px gaps above and below
-            marginTop: 10,
-            marginBottom: 10,
           },
           animatedStyle,
         ]}
@@ -144,6 +141,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     paddingHorizontal: spacing.md,
+    marginBottom: 10, // Ensure 10px gap to tab bar
   },
   centerContainer: {
     flex: 1,

@@ -62,8 +62,8 @@ export const VehicleFilters = React.memo(VehicleFiltersComponent);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: LAYOUT.CONTAINER_PADDING,
-    paddingTop: 0, // Remove top padding to maximize space
-    paddingBottom: 0, // Remove bottom padding so departures can touch it
+    paddingTop: 0,
+    paddingBottom: 10, // Ensure 10px gap to departures
   },
   filtersRow: {
     marginTop: LAYOUT.SECTION_GAP,

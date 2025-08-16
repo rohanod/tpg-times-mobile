@@ -8,7 +8,7 @@ import { useFrameworkReady } from '~/hooks/useFrameworkReady';
 import { useSettings } from '~/hooks/useSettings';
 import { COLORS } from '~/config/theme';
 import { scaleHeight, isTablet } from '~/utils/responsive';
-import KeyboardDebugLine from '~/components/KeyboardDebugLine';
+import { KeyboardDebugLine } from '~/components/KeyboardDebugLine';
 
 export default function RootLayout() {
   useFrameworkReady();

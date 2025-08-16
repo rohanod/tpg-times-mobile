@@ -25,7 +25,7 @@ import { VehicleFilters } from '../organisms/VehicleFilters';
 import { DeparturesList } from '../organisms/DeparturesList';
 import { ResponsiveLayout } from '../layout/ResponsiveLayout';
 import { PageHeader } from '../layout/PageHeader';
-import { Toast } from '../Toast';
+import { Toast, type ToastType } from '../Toast';
 
 export const StopsPage: React.FC = () => {
   const { language } = useSettings();
@@ -44,10 +44,10 @@ export const StopsPage: React.FC = () => {
   // Toast state
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState<'error' | 'warning' | 'info'>('error');
+  const [toastType, setToastType] = useState<ToastType>('error');
 
   // Toast helper function
-  const showToast = useCallback((message: string, type: 'error' | 'warning' | 'info' = 'error') => {
+  const showToast = useCallback((message: string, type: ToastType = 'error') => {
     setToastMessage(message);
     setToastType(type);
     setToastVisible(true);

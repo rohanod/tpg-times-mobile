@@ -13,4 +13,4 @@ export * from './organisms';
 export * from './pages';
 
 // Legacy exports for existing components
-export { Toast } from './Toast';
+export { Toast, type ToastType } from './Toast';
