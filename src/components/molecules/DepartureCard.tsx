@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -8,6 +8,7 @@ import Animated, {
   withDelay,
   Easing,
 } from 'react-native-reanimated';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSettings } from '~/hooks/useSettings';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { formatTime } from '~/utils/formatTime';
@@ -18,12 +19,14 @@ interface DepartureCardProps {
   departure: GroupedDeparture;
   index: number;
   isVisible: Animated.SharedValue<boolean>;
+  onPress?: (departure: GroupedDeparture) => void;
 }
 
 const DepartureCardComponent: React.FC<DepartureCardProps> = ({
   departure,
   index,
   isVisible,
+  onPress,
 }) => {
   const { language, timeFormat, darkMode } = useSettings();
   const theme = getResponsiveTheme(darkMode);
@@ -56,50 +59,61 @@ const DepartureCardComponent: React.FC<DepartureCardProps> = ({
     }
   );
 
+  const pressableStyle = ({ pressed }: { pressed: boolean }) => [
+    styles.container,
+    { borderColor: theme.border },
+    pressed && {
+      backgroundColor: darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+    },
+  ];
+
   return (
-    <Animated.View 
-      style={[
-        styles.container, 
-        { borderColor: theme.border }, 
-        animatedStyle
-      ]}
-    >
-      <View style={[styles.vehicleIcon, { backgroundColor: departure.color }]}>
-        <Text style={styles.vehicleNumber}>{departure.number}</Text>
-      </View>
-      <View style={styles.departureInfo}>
-        <Text style={[styles.vehicleType, { color: theme.text }]}>
-          {departure.vehicleType} {departure.number}
-        </Text>
-        {Object.entries(departure.destinations).map(([destination, times]) => (
-          <View key={destination} style={styles.destinationRow}>
-            <Text 
-              style={[styles.destinationText, { color: theme.textSecondary }]} 
-              numberOfLines={1}
-            >
-              {destination}
+    <Animated.View style={[animatedStyle]}>
+      <Pressable
+        style={pressableStyle}
+        onPress={() => onPress?.(departure)}
+        android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+        accessibilityRole="button"
+        accessibilityHint={language === 'en' ? 'Shows upcoming times' : 'Affiche les prochains horaires'}
+      >
+        <View style={[styles.vehicleIcon, { backgroundColor: departure.color }]}>
+          <Text style={styles.vehicleNumber}>{departure.number}</Text>
+        </View>
+        <View style={styles.departureInfo}>
+          <View style={styles.titleRow}>
+            <Text style={[styles.vehicleType, { color: theme.text }]}>
+              {departure.vehicleType} {departure.number}
             </Text>
-            <View style={styles.timesContainer}>
-              {times.slice(0, 3).map((time, timeIndex) => {
-                const timeValue = formatTime(time.departure.toISOString(), timeFormat);
-                const isDelayed = time.delay > 0;
-                return (
-                  <View key={timeIndex} style={styles.timeChip}>
-                    <Text style={[styles.timeText, { color: theme.text }]}>
-                      {timeFormat === 'minutes'
-                        ? `${timeValue} ${language === 'en' ? 'min' : 'min'}`
-                        : timeValue}
-                    </Text>
-                    {isDelayed && (
-                      <Text style={styles.delayText}>+{time.delay}</Text>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
+            <MaterialIcons name="chevron-right" size={20} color={theme.textSecondary} />
           </View>
-        ))}
-      </View>
+          {Object.entries(departure.destinations).map(([destination, times]) => (
+            <View key={destination} style={styles.destinationRow}>
+              <Text
+                style={[styles.destinationText, { color: theme.textSecondary }]}
+                numberOfLines={1}
+              >
+                {destination}
+              </Text>
+              <View style={styles.timesContainer}>
+                {times.slice(0, 1).map((time, timeIndex) => {
+                  const timeValue = formatTime(time.departure.toISOString(), timeFormat);
+                  const isDelayed = time.delay > 0;
+                  return (
+                    <View key={timeIndex} style={styles.timeChip}>
+                      <Text style={[styles.timeText, { color: theme.text }]}>
+                        {timeFormat === 'minutes'
+                          ? `${timeValue} ${language === 'en' ? 'min' : 'min'}`
+                          : timeValue}
+                      </Text>
+                      {isDelayed && <Text style={styles.delayText}>+{time.delay}</Text>}
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+        </View>
+      </Pressable>
     </Animated.View>
   );
 };
@@ -118,6 +132,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: spacing.sm,
     gap: spacing.md,
+    overflow: 'hidden',
   },
   vehicleIcon: {
     width: scaleWidth(40),
@@ -134,10 +149,15 @@ const styles = StyleSheet.create({
   departureInfo: {
     flex: 1,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
   vehicleType: {
     ...typography.body,
     fontWeight: '600',
-    marginBottom: spacing.xs,
   },
   destinationRow: {
     flexDirection: 'row',

@@ -4,6 +4,7 @@ import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useSettings } from '~/hooks/useSettings';
 import { DepartureCard } from '../molecules/DepartureCard';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import LineTimesSheet, { type LineTimesSheetRef } from './LineTimesSheet';
 import { spacing, borderRadius } from '~/utils/responsive';
 import { LAYOUT } from '~/utils/layout';
 import type { GroupedDeparture } from '~/services/DepartureService';
@@ -42,11 +43,23 @@ const DeparturesListComponent: React.FC<DeparturesListProps> = ({
     return 0;
   });
 
+  const [selected, setSelected] = React.useState<GroupedDeparture | null>(null);
+  const sheetRef = React.useRef<LineTimesSheetRef>(null);
+
+  const onCardPress = React.useCallback((dep: GroupedDeparture) => {
+    setSelected(dep);
+    // present bottom sheet on next frame
+    requestAnimationFrame(() => sheetRef.current?.present?.());
+  }, []);
+
+  const onSheetDismiss = React.useCallback(() => setSelected(null), []);
+
   const renderDeparture = ({ item, index }: { item: GroupedDeparture; index: number }) => (
     <DepartureCard
       departure={item}
       index={index}
       isVisible={departureCardsVisible}
+      onPress={onCardPress}
     />
   );
 
@@ -82,23 +95,27 @@ const DeparturesListComponent: React.FC<DeparturesListProps> = ({
   };
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          backgroundColor: darkMode
-            ? 'rgba(28, 28, 30, 0.95)'
-            : 'rgba(255, 255, 255, 0.95)',
-          shadowColor: darkMode ? '#000' : '#000',
-          // Maintain required 10px gaps above and below
-          marginTop: 10,
-          marginBottom: 10,
-        },
-        animatedStyle,
-      ]}
-    >
-      {renderContent()}
-    </Animated.View>
+    <>
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            backgroundColor: darkMode
+              ? 'rgba(28, 28, 30, 0.95)'
+              : 'rgba(255, 255, 255, 0.95)',
+            shadowColor: darkMode ? '#000' : '#000',
+            // Maintain required 10px gaps above and below
+            marginTop: 10,
+            marginBottom: 10,
+          },
+          animatedStyle,
+        ]}
+      >
+        {renderContent()}
+      </Animated.View>
+      {/* Bottom sheet modal for line times */}
+      <LineTimesSheet ref={sheetRef} selected={selected} onDismiss={onSheetDismiss} />
+    </>
   );
 };
 
