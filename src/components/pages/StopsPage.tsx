@@ -143,13 +143,15 @@ export const StopsPage: React.FC = () => {
   //   opacity: animationProgress.value,
   // }));
 
+  // Keep layout stable when focusing vehicle number filter
+  // Identity styles ensure nothing moves when the number pad opens
   const animatedSearchHideStyle = useAnimatedStyle(() => ({
-    opacity: 1 - vehicleFilterMoveUpProgress.value,
-    transform: [{ translateY: -vehicleFilterMoveUpProgress.value * 60 }],
+    opacity: 1,
+    transform: [{ translateY: 0 }],
   }));
 
   const animatedVehicleFilterMoveUpStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: -vehicleFilterMoveUpProgress.value * 80 }],
+    transform: [{ translateY: 0 }],
   }));
 
   // Entrance animations

@@ -98,6 +98,7 @@ export default {
     },
     android: {
       package: getUniqueIdentifier(),
+      softwareKeyboardLayoutMode: 'pan',
       adaptiveIcon: {
         foregroundImage: "./assets/images/ios-light.png",
         monochromeImage: "./assets/images/ios-dark.png"
