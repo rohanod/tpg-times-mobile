@@ -59,7 +59,7 @@ const LineTimesSheet = React.forwardRef<LineTimesSheetRef, LineTimesSheetProps>(
     );
   }, [selected, theme.text]);
 
-  // dynamic snap points: start at 40%, allow pull up only when content exceeds 40%, cap max at 85% of screen height
+  // dynamic snap points: start at 40%, allow pull up only when content exceeds 40%, cap max at 95% of screen height
   const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [contentHeight, setContentHeight] = useState(0);
@@ -76,7 +76,7 @@ const LineTimesSheet = React.forwardRef<LineTimesSheetRef, LineTimesSheetProps>(
 
   const snapPoints = useMemo(() => {
     const minSnap = 0.4; // 40%
-    const maxSnap = 0.88; // slightly higher cap to avoid visual cut-off
+    const maxSnap = 0.95; // slightly higher cap to avoid visual cut-off
 
     // account for safe area top inset and handle height (~24 by default)
     const HANDLE_HEIGHT = 24;
