@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useSettings } from '~/hooks/useSettings';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { useResponsiveLayout } from '~/hooks/useResponsiveLayout';
+import { scaleFont, scaleHeight, scaleWidth } from '~/utils/responsive';
 import { LAYOUT } from '~/utils/layout';
 
 interface PageHeaderProps {
@@ -25,27 +26,31 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       styles.container,
       {
         paddingHorizontal: LAYOUT.CONTAINER_PADDING,
-        paddingTop: 0, // Remove top padding to maximize space
+        paddingTop: scaleHeight(8),
         paddingBottom: LAYOUT.SECTION_GAP,
         minHeight: LAYOUT.HEADER_HEIGHT,
       }
     ]}>
       <View style={styles.titleContainer}>
         <Text style={[
-          theme.typography.title,
-          { color: theme.text },
-          // Adjust title size for small devices
-          layout.isSmallDevice && { fontSize: theme.typography.title.fontSize * 0.9 }
+          styles.title,
+          {
+            color: theme.colors?.label || theme.text,
+            fontSize: layout.isSmallDevice ? scaleFont(28) : scaleFont(32),
+          }
         ]}>
           {title}
         </Text>
         {subtitle && (
           <Text style={[
-            theme.typography.caption,
-            { color: theme.textSecondary, marginTop: theme.spacing.xs / 2 }
+            styles.subtitle,
+            { 
+              color: theme.colors?.secondaryLabel || theme.textSecondary,
+              marginTop: scaleHeight(2)
+            }
           ]}>
             {subtitle}
-        </Text>
+          </Text>
         )}
       </View>
       {rightElement && (
@@ -60,13 +65,24 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
   },
   titleContainer: {
     flex: 1,
   },
+  title: {
+    fontWeight: '700',
+    letterSpacing: 0.35,
+    lineHeight: scaleHeight(38),
+  },
+  subtitle: {
+    fontSize: scaleFont(15),
+    fontWeight: '400',
+    lineHeight: scaleHeight(20),
+  },
   rightElement: {
-    marginLeft: 16,
+    marginLeft: scaleWidth(16),
+    alignItems: 'flex-end',
   },
 });

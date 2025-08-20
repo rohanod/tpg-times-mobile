@@ -3,7 +3,7 @@ import { FlatList, View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useSettings } from '~/hooks/useSettings';
 import { DepartureCard } from '../molecules/DepartureCard';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { LoadingSpinner } from '../ui';
 import LineTimesSheet, { type LineTimesSheetRef } from './LineTimesSheet';
 import { spacing, borderRadius } from '~/utils/responsive';
 import { LAYOUT } from '~/utils/layout';
@@ -107,50 +107,52 @@ const DeparturesListComponent: React.FC<DeparturesListProps> = ({
     }
 
     return (
-      <FlatList
-        data={sortedDepartures}
-        renderItem={renderDeparture}
-        keyExtractor={(item) => `${item.vehicleType}-${item.number}`}
-        style={styles.list}
-        showsVerticalScrollIndicator={false}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        keyboardDismissMode="on-drag"
-        ListHeaderComponent={<View style={{ height: spacing.lg }} />}
-        onScrollBeginDrag={() => {
-          isScrollingRef.current = true;
-          setScrollActive(true);
-          if (cooldownTimerRef.current) {
-            clearTimeout(cooldownTimerRef.current);
-            cooldownTimerRef.current = null;
-          }
-          setCooldownActive(false);
-        }}
-        onMomentumScrollBegin={() => {
-          isScrollingRef.current = true;
-          setScrollActive(true);
-          if (cooldownTimerRef.current) {
-            clearTimeout(cooldownTimerRef.current);
-            cooldownTimerRef.current = null;
-          }
-          setCooldownActive(false);
-        }}
-        onScrollEndDrag={() => {
-          // If no momentum, consider scrolling ended now
-          isScrollingRef.current = false;
-          setScrollActive(false);
-          setCooldownActive(true);
-          if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
-          cooldownTimerRef.current = setTimeout(() => setCooldownActive(false), TAP_COOLDOWN_MS);
-        }}
-        onMomentumScrollEnd={() => {
-          isScrollingRef.current = false;
-          setScrollActive(false);
-          setCooldownActive(true);
-          if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
-          cooldownTimerRef.current = setTimeout(() => setCooldownActive(false), TAP_COOLDOWN_MS);
-        }}
-      />
+      <>
+        <FlatList
+          data={sortedDepartures}
+          renderItem={renderDeparture}
+          keyExtractor={(item) => `${item.vehicleType}-${item.number}`}
+          style={styles.list}
+          showsVerticalScrollIndicator={false}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          keyboardDismissMode="on-drag"
+          ListHeaderComponent={<View style={{ height: spacing.lg }} />}
+          onScrollBeginDrag={() => {
+            isScrollingRef.current = true;
+            setScrollActive(true);
+            if (cooldownTimerRef.current) {
+              clearTimeout(cooldownTimerRef.current);
+              cooldownTimerRef.current = null;
+            }
+            setCooldownActive(false);
+          }}
+          onMomentumScrollBegin={() => {
+            isScrollingRef.current = true;
+            setScrollActive(true);
+            if (cooldownTimerRef.current) {
+              clearTimeout(cooldownTimerRef.current);
+              cooldownTimerRef.current = null;
+            }
+            setCooldownActive(false);
+          }}
+          onScrollEndDrag={() => {
+            // If no momentum, consider scrolling ended now
+            isScrollingRef.current = false;
+            setScrollActive(false);
+            setCooldownActive(true);
+            if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
+            cooldownTimerRef.current = setTimeout(() => setCooldownActive(false), TAP_COOLDOWN_MS);
+          }}
+          onMomentumScrollEnd={() => {
+            isScrollingRef.current = false;
+            setScrollActive(false);
+            setCooldownActive(true);
+            if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
+            cooldownTimerRef.current = setTimeout(() => setCooldownActive(false), TAP_COOLDOWN_MS);
+          }}
+        />
+      </>
     );
   };
 

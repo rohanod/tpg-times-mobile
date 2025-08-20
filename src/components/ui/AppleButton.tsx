@@ -12,10 +12,10 @@ import { scaleWidth, scaleHeight, scaleFont } from '~/utils/responsive';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { useSettings } from '~/hooks/useSettings';
 
-interface ButtonProps {
+interface AppleButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'destructive';
+  variant?: 'filled' | 'tinted' | 'plain' | 'gray';
   size?: 'small' | 'medium' | 'large';
   disabled?: boolean;
   loading?: boolean;
@@ -25,10 +25,10 @@ interface ButtonProps {
   fullWidth?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({
+export const AppleButton: React.FC<AppleButtonProps> = ({
   title,
   onPress,
-  variant = 'primary',
+  variant = 'filled',
   size = 'medium',
   disabled = false,
   loading = false,
@@ -41,39 +41,32 @@ export const Button: React.FC<ButtonProps> = ({
   const theme = getResponsiveTheme(darkMode);
 
   const getVariantStyles = () => {
+    const baseColor = theme.colors.systemBlue;
+    
     switch (variant) {
-      case 'primary':
+      case 'filled':
         return {
-          backgroundColor: disabled 
-            ? (theme.colors?.systemGray4 || '#D1D1D6') 
-            : (theme.colors?.systemBlue || '#007AFF'),
+          backgroundColor: disabled ? theme.colors.systemGray4 : baseColor,
           borderWidth: 0,
         };
-      case 'secondary':
+      case 'tinted':
         return {
           backgroundColor: disabled 
-            ? (theme.colors?.systemGray6 || '#F2F2F7') 
-            : (theme.colors?.systemGray5 || '#E5E5EA'),
+            ? theme.colors.systemGray6 
+            : `${baseColor}1A`, // 10% opacity
           borderWidth: 0,
         };
-      case 'outline':
-        return {
-          backgroundColor: 'transparent',
-          borderWidth: 1,
-          borderColor: disabled 
-            ? (theme.colors?.systemGray4 || '#D1D1D6')
-            : (theme.colors?.systemBlue || '#007AFF'),
-        };
-      case 'destructive':
+      case 'gray':
         return {
           backgroundColor: disabled 
-            ? (theme.colors?.systemGray4 || '#D1D1D6')
-            : (theme.colors?.systemRed || '#FF3B30'),
+            ? theme.colors.systemGray6 
+            : theme.colors.systemGray5,
           borderWidth: 0,
         };
+      case 'plain':
       default:
         return {
-          backgroundColor: theme.colors?.systemBlue || '#007AFF',
+          backgroundColor: 'transparent',
           borderWidth: 0,
         };
     }
@@ -81,19 +74,19 @@ export const Button: React.FC<ButtonProps> = ({
 
   const getTextColor = () => {
     if (disabled) {
-      return theme.colors?.systemGray3 || '#C7C7CC';
+      return theme.colors.systemGray3;
     }
     
     switch (variant) {
-      case 'primary':
-      case 'destructive':
-        return theme.colors?.white || '#FFFFFF';
-      case 'secondary':
-        return theme.colors?.label || '#000000';
-      case 'outline':
-        return theme.colors?.systemBlue || '#007AFF';
+      case 'filled':
+        return theme.colors.white;
+      case 'tinted':
+      case 'plain':
+        return theme.colors.systemBlue;
+      case 'gray':
+        return theme.colors.label;
       default:
-        return theme.colors?.white || '#FFFFFF';
+        return theme.colors.systemBlue;
     }
   };
 
@@ -102,14 +95,14 @@ export const Button: React.FC<ButtonProps> = ({
       case 'small':
         return {
           paddingHorizontal: scaleWidth(16),
-          paddingVertical: scaleHeight(8),
-          minHeight: scaleHeight(32),
+          paddingVertical: scaleHeight(6),
+          minHeight: scaleHeight(30),
           borderRadius: scaleWidth(8),
         };
       case 'large':
         return {
           paddingHorizontal: scaleWidth(24),
-          paddingVertical: scaleHeight(16),
+          paddingVertical: scaleHeight(14),
           minHeight: scaleHeight(50),
           borderRadius: scaleWidth(12),
         };
@@ -117,8 +110,8 @@ export const Button: React.FC<ButtonProps> = ({
       default:
         return {
           paddingHorizontal: scaleWidth(20),
-          paddingVertical: scaleHeight(12),
-          minHeight: scaleHeight(44),
+          paddingVertical: scaleHeight(10),
+          minHeight: scaleHeight(38),
           borderRadius: scaleWidth(10),
         };
     }
@@ -162,7 +155,7 @@ export const Button: React.FC<ButtonProps> = ({
       style={buttonStyle}
       onPress={onPress}
       disabled={disabled || loading}
-      activeOpacity={0.7}
+      activeOpacity={0.6}
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityState={{ disabled: disabled || loading }}
