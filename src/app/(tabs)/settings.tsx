@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, Text } from 'react-native';
+import { StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '../../hooks/useSettings';
 import { getResponsiveTheme } from '../../utils/responsiveTheme';
@@ -82,7 +82,7 @@ export default function SettingsScreen() {
           style={styles.header}
         />
         
-        <SettingsList sections={settingsSections} />
+        <SettingsList sections={settingsSections} darkMode={darkMode} />
       </ScrollView>
     </SafeAreaView>
   );

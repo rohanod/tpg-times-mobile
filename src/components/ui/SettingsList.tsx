@@ -32,16 +32,17 @@ export interface SettingsItem {
 interface SettingsListProps {
   sections: SettingsSection[];
   style?: ViewStyle;
+  darkMode?: boolean;
 }
 
-export const SettingsList: React.FC<SettingsListProps> = ({ sections, style }) => {
-  const theme = getResponsiveTheme(false); // Will get from context in actual usage
+export const SettingsList: React.FC<SettingsListProps> = ({ sections, style, darkMode = false }) => {
+  const theme = getResponsiveTheme(darkMode);
 
   const renderItem = (item: SettingsItem, isFirst: boolean, isLast: boolean) => {
     const itemStyles = [
       styles.settingItem,
       {
-        backgroundColor: theme.colors.white,
+        backgroundColor: theme.colors.secondarySystemGroupedBackground,
         borderTopWidth: isFirst ? 0 : StyleSheet.hairlineWidth,
         borderTopColor: theme.colors.separator,
         borderTopLeftRadius: isFirst ? theme.borderRadius.lg : 0,
