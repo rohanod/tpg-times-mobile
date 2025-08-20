@@ -48,6 +48,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         <TextInput
           autoComplete="off"
           autoCorrect={false}
+          autoCapitalize="none"
+          spellCheck={false}
+          textContentType="none"
           style={[styles.searchInput, { color: theme.text, fontSize: componentSizes.searchBar.fontSize }]}
           placeholder={placeholder || defaultPlaceholder}
           placeholderTextColor={theme.textSecondary}

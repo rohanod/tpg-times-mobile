@@ -45,6 +45,10 @@ export const Input: React.FC<InputProps> = ({
       >
         {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
         <TextInput
+          autoComplete="off"
+          autoCorrect={false}
+          autoCapitalize="none"
+          spellCheck={false}
           style={[
             styles.input,
             { color: theme.text },

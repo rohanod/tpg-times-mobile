@@ -9,26 +9,32 @@ import {
   useAnimatedStyle,
   withTiming,
   withDelay,
+  withSpring,
   Easing,
   useAnimatedReaction,
+  interpolate,
+  Extrapolation,
 } from 'react-native-reanimated';
 
 import { useSettings } from '~/hooks/useSettings';
 import { useArretsCsv } from '~/hooks/useArretsCsv';
 import { useCurrentStop } from '~/hooks/useCurrentStop';
 import { useDepartureService } from '~/hooks/useDepartureService';
+import { useKeyboardHandler } from '~/hooks/useKeyboardHandler';
 import type { Stop } from '~/services/DepartureService';
 import { screenDimensions } from '~/utils/responsive';
 
 import { SearchSection } from '../organisms/SearchSection';
 import { VehicleFilters } from '../organisms/VehicleFilters';
 import { DeparturesList } from '../organisms/DeparturesList';
+import { SuggestionsContainer } from '../organisms/SuggestionsContainer';
 import { ResponsiveLayout } from '../layout/ResponsiveLayout';
 import { PageHeader } from '../layout/PageHeader';
 import { Toast, type ToastType } from '../Toast';
 
 export const StopsPage: React.FC = () => {
   const { language } = useSettings();
+  const { keyboardHeight, screenHeight } = useKeyboardHandler();
 
   // State management
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,12 +60,23 @@ export const StopsPage: React.FC = () => {
   }, []);
 
   // Animated Values
-  const animationProgress = useSharedValue(0);
   const searchEntranceProgress = useSharedValue(0);
   const filtersEntranceProgress = useSharedValue(0);
   const departuresEntranceProgress = useSharedValue(0);
-  const departureCardsVisible = useSharedValue(1);
   const vehicleFilterMoveUpProgress = useSharedValue(0);
+  
+  // New animated values for bouncy keyboard transitions
+  const departuresExitProgress = useSharedValue(0);
+  const departuresReturnProgress = useSharedValue(0);
+  
+  // Animation sequencing for proper order: filters out -> suggestions in
+  const filtersExitProgress = useSharedValue(0);
+  const suggestionsEnterProgress = useSharedValue(0);
+
+  // Constants for layout calculations
+  const HEADER_HEIGHT = 60; // approximate header height
+  const SEARCH_HEIGHT = 60; // approximate search bar height  
+  const TAB_BAR_HEIGHT = 85; // approximate tab bar height
 
   // Refs
   // No suggestion debounce needed
@@ -88,7 +105,7 @@ export const StopsPage: React.FC = () => {
     }
   }, [departuresError, showToast]);
 
-  // Keyboard listeners
+  // Keyboard listeners - simplified since useKeyboardHandler manages keyboard height
   useEffect(() => {
     const onKeyboardShow = () => {
       // Only set inputFocused if vehicle filter is not focused
@@ -122,14 +139,64 @@ export const StopsPage: React.FC = () => {
     opacity: filtersEntranceProgress.value,
   }));
 
-  const animatedFiltersStyle = useAnimatedStyle(() => ({
-    opacity: 1 - animationProgress.value,
-    transform: [{ translateX: -animationProgress.value * screenDimensions.width }],
-  }));
+  // Updated filters style for keyboard-aware behavior - slide out first
+  const animatedFiltersStyle = useAnimatedStyle(() => {
+    return {
+      opacity: interpolate(filtersExitProgress.value, [0, 1], [1, 0]),
+      transform: [
+        { translateX: filtersExitProgress.value * -screenDimensions.width }
+      ],
+    };
+  });
 
-  const animatedDeparturesStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: animationProgress.value * screenDimensions.height }],
-  }));
+  // Suggestions container style with delayed entrance and proper positioning
+  const animatedSuggestionsStyle = useAnimatedStyle(() => {
+    return {
+      top: HEADER_HEIGHT + SEARCH_HEIGHT, // Position after header and search
+      opacity: suggestionsEnterProgress.value,
+      transform: [
+        { 
+          translateY: interpolate(
+            suggestionsEnterProgress.value,
+            [0, 1],
+            [50, 0]
+          )
+        },
+        {
+          scale: interpolate(
+            suggestionsEnterProgress.value,
+            [0, 1],
+            [0.9, 1]
+          )
+        }
+      ],
+    };
+  });
+
+  // Updated departures style with bouncy spring animations
+  const animatedDeparturesStyle = useAnimatedStyle(() => {
+    return {
+      opacity: interpolate(departuresExitProgress.value, [0, 1], [1, 0]),
+      transform: [
+        { 
+          translateY: interpolate(
+            departuresExitProgress.value,
+            [0, 1],
+            [0, screenHeight * 0.6], // slide down with spring bounce
+            Extrapolation.CLAMP
+          )
+        },
+        {
+          scale: interpolate(
+            departuresReturnProgress.value,
+            [0, 1],
+            [0.85, 1], // slight scale animation for return
+            Extrapolation.CLAMP
+          )
+        }
+      ],
+    };
+  });
 
   // Initial entrance for departures: slide up from bottom and fade in
   const animatedDeparturesEntranceStyle = useAnimatedStyle(() => ({
@@ -137,14 +204,7 @@ export const StopsPage: React.FC = () => {
     opacity: departuresEntranceProgress.value,
   }));
 
-  // Suggestions disabled currently; keeping style prepared for future use
-  // const animatedSuggestionsStyle = useAnimatedStyle(() => ({
-  //   transform: [{ translateY: (1 - animationProgress.value) * -animations.translate.large * 4 }],
-  //   opacity: animationProgress.value,
-  // }));
-
   // Keep layout stable when focusing vehicle number filter
-  // Identity styles ensure nothing moves when the number pad opens
   const animatedSearchHideStyle = useAnimatedStyle(() => ({
     opacity: 1,
     transform: [{ translateY: 0 }],
@@ -179,27 +239,56 @@ export const StopsPage: React.FC = () => {
     }
   );
 
-  // Focus animations
+  // Keyboard state animations - sequenced for proper order
   useEffect(() => {
-    const shouldSlideDown = inputFocused;
-
-    if (shouldSlideDown) {
-      departureCardsVisible.value = 0;
-      const maxCardDelay = departures.length > 0 ? (departures.length - 1) * 50 + 300 : 0;
-      const borderDelay = maxCardDelay + 100;
-
-      animationProgress.value = withDelay(borderDelay, withTiming(1, {
-        duration: 600,
-        easing: Easing.inOut(Easing.ease)
-      }));
-    } else {
-      animationProgress.value = withTiming(0, {
-        duration: 600,
-        easing: Easing.inOut(Easing.ease)
+    if (inputFocused) {
+      // Step 1: Vehicle filters slide out immediately (fast)
+      filtersExitProgress.value = withTiming(1, {
+        duration: 300,
+        easing: Easing.inOut(Easing.ease),
       });
-      departureCardsVisible.value = withDelay(600, withTiming(1, { duration: 0 }));
+      
+      // Step 2: Departures exit with bounce (concurrent with filters)
+      departuresExitProgress.value = withSpring(1, {
+        damping: 15,
+        stiffness: 150,
+        mass: 1,
+      });
+      
+      // Step 3: Suggestions enter after filters are out (delayed)
+      suggestionsEnterProgress.value = withDelay(200, withSpring(1, {
+        damping: 12,
+        stiffness: 100,
+        mass: 1,
+      }));
+      
+      departuresReturnProgress.value = 0;
+    } else {
+      // Reverse sequence: suggestions out first, then filters back in
+      suggestionsEnterProgress.value = withTiming(0, {
+        duration: 200,
+        easing: Easing.inOut(Easing.ease),
+      });
+      
+      // Filters slide back in after suggestions are gone
+      filtersExitProgress.value = withDelay(100, withTiming(0, {
+        duration: 400,
+        easing: Easing.out(Easing.ease),
+      }));
+      
+      // Departures return with bounce
+      departuresExitProgress.value = withSpring(0, {
+        damping: 15,
+        stiffness: 120,
+        mass: 1.2,
+      });
+      departuresReturnProgress.value = withDelay(100, withSpring(1, {
+        damping: 12,
+        stiffness: 100,
+        mass: 1,
+      }));
     }
-  }, [inputFocused, departures.length, animationProgress, departureCardsVisible]);
+  }, [inputFocused, departuresExitProgress, departuresReturnProgress, filtersExitProgress, suggestionsEnterProgress]);
 
   // Vehicle filter focus animations
   useEffect(() => {
@@ -399,7 +488,20 @@ export const StopsPage: React.FC = () => {
           animatedStyle={[animatedFiltersStyle, animatedFiltersEntranceStyle, animatedVehicleFilterMoveUpStyle]}
         />
 
-        {/* Departures List - now using flex to fill remaining space */}
+        {/* Suggestions Container - positioned absolutely to not affect layout */}
+        {inputFocused && (
+          <SuggestionsContainer
+            keyboardHeight={keyboardHeight}
+            searchHeight={SEARCH_HEIGHT}
+            availableHeight={screenHeight - HEADER_HEIGHT - TAB_BAR_HEIGHT}
+            isVisible={inputFocused}
+            animatedStyle={animatedSuggestionsStyle}
+          >
+            {/* Future: Add stop suggestions here */}
+          </SuggestionsContainer>
+        )}
+
+        {/* Departures List - now keyboard-aware */}
         <DeparturesList
           departures={departures}
           vehicleOrder={vehicleOrder}
