@@ -56,11 +56,27 @@ const DeparturesListComponent: React.FC<DeparturesListProps> = ({
   const [selected, setSelected] = React.useState<GroupedDeparture | null>(null);
   const sheetRef = React.useRef<LineTimesSheetRef>(null);
 
+  // Track whether the list is actively scrolling to avoid accidental taps
+  const isScrollingRef = React.useRef(false);
+  const [scrollActive, setScrollActive] = React.useState(false);
+  const [cooldownActive, setCooldownActive] = React.useState(false);
+  const cooldownTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const TAP_COOLDOWN_MS = 140; // small delay after scroll end to accept taps
+
+  React.useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
+    };
+  }, []);
+
   const onCardPress = React.useCallback((dep: GroupedDeparture) => {
+    // Ignore presses while scrolling or immediately after scroll ended
+    if (isScrollingRef.current || scrollActive || cooldownActive) return;
+
     setSelected(dep);
     // present bottom sheet on next frame
     requestAnimationFrame(() => sheetRef.current?.present?.());
-  }, []);
+  }, [cooldownActive, scrollActive]);
 
   const onSheetDismiss = React.useCallback(() => setSelected(null), []);
 
@@ -70,6 +86,7 @@ const DeparturesListComponent: React.FC<DeparturesListProps> = ({
       index={index}
       isVisible={departureCardsVisible}
       onPress={onCardPress}
+      disabled={scrollActive || cooldownActive}
     />
   );
 
@@ -100,6 +117,39 @@ const DeparturesListComponent: React.FC<DeparturesListProps> = ({
         onRefresh={onRefresh}
         keyboardDismissMode="on-drag"
         ListHeaderComponent={<View style={{ height: spacing.lg }} />}
+        onScrollBeginDrag={() => {
+          isScrollingRef.current = true;
+          setScrollActive(true);
+          if (cooldownTimerRef.current) {
+            clearTimeout(cooldownTimerRef.current);
+            cooldownTimerRef.current = null;
+          }
+          setCooldownActive(false);
+        }}
+        onMomentumScrollBegin={() => {
+          isScrollingRef.current = true;
+          setScrollActive(true);
+          if (cooldownTimerRef.current) {
+            clearTimeout(cooldownTimerRef.current);
+            cooldownTimerRef.current = null;
+          }
+          setCooldownActive(false);
+        }}
+        onScrollEndDrag={() => {
+          // If no momentum, consider scrolling ended now
+          isScrollingRef.current = false;
+          setScrollActive(false);
+          setCooldownActive(true);
+          if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
+          cooldownTimerRef.current = setTimeout(() => setCooldownActive(false), TAP_COOLDOWN_MS);
+        }}
+        onMomentumScrollEnd={() => {
+          isScrollingRef.current = false;
+          setScrollActive(false);
+          setCooldownActive(true);
+          if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
+          cooldownTimerRef.current = setTimeout(() => setCooldownActive(false), TAP_COOLDOWN_MS);
+        }}
       />
     );
   };

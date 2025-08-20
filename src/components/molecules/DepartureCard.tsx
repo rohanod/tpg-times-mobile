@@ -20,6 +20,7 @@ interface DepartureCardProps {
   index: number;
   isVisible: Animated.SharedValue<boolean>;
   onPress?: (departure: GroupedDeparture) => void;
+  disabled?: boolean;
 }
 
 const DepartureCardComponent: React.FC<DepartureCardProps> = ({
@@ -27,6 +28,7 @@ const DepartureCardComponent: React.FC<DepartureCardProps> = ({
   index,
   isVisible,
   onPress,
+  disabled,
 }) => {
   const { language, timeFormat, darkMode } = useSettings();
   const theme = getResponsiveTheme(darkMode);
@@ -73,6 +75,7 @@ const DepartureCardComponent: React.FC<DepartureCardProps> = ({
         style={pressableStyle}
         onPress={() => onPress?.(departure)}
         android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+        disabled={disabled}
         accessibilityRole="button"
         accessibilityHint={language === 'en' ? 'Shows upcoming times' : 'Affiche les prochains horaires'}
       >

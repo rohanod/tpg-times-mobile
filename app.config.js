@@ -26,15 +26,24 @@ const getAppName = () => {
 };
 
 
+// Keep runtime and channel headers consistent across build variants
+const pkg = require('./package.json');
+
 export default {
   expo: {
     name: getAppName(),
     slug: IS_DEV ? "tpg-times-dev" : "tpg-times",
+    version: pkg.version,
     updates: {
       url: "https://u.expo.dev/7d689592-1fb0-4eb4-963f-6493cb6a9cb3",
       fallbackToCacheTimeout: 0,
       checkAutomatically: "ON_LOAD",
-      enabled: true
+      enabled: true,
+      requestHeaders: {
+        // Provide a default channel header for local and EAS builds.
+        // EAS builds will override this based on the build profile's `channel`.
+        'expo-channel-name': 'production'
+      }
     },
     orientation: "portrait",
     scheme: IS_DEV ? "tpgtimes-dev" : "tpgtimes",
