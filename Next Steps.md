@@ -73,7 +73,7 @@ https://github.com/mahdidavoodi7/bottom-sheet-stepper
 https://github.com/gorhom/react-native-bottom-sheet -->
 
 <!-- 17. Make the cells have a yellow background colour when there is a delay of any time -->
-18. Right now, I think when the time format is minutes, it calculates the delays but doesn't show a warning but if the time format is 24 hour time, it doesn't calculate the delays and doesn't show the warnings
+18. Right now, I think when the time format is minutes, it calculates the delays but doesn't show a warning but if the time format is 24 hour time, it doesn't calculate the delays and still doesn't show the warnings
 <!-- 19. When exiting the text box, it should clear the autocompletions -->
 <!-- 21. Make it update the timings every time one of the circle buttons are pressed if it has been more than 6 seconds since the last update/press on circle button -->
 <!-- 22. The tab names don't change language when I switch language -->
