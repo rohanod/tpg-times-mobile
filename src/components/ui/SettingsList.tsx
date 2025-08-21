@@ -20,7 +20,7 @@ export interface SettingsItem {
   id: string;
   title: string;
   subtitle?: string;
-  type: 'toggle' | 'disclosure' | 'destructive' | 'value';
+  type: 'toggle' | 'disclosure' | 'destructive' | 'value' | 'icon';
   value?: boolean | string;
   onPress?: () => void;
   onValueChange?: (value: boolean) => void;
@@ -71,11 +71,13 @@ export const SettingsList: React.FC<SettingsListProps> = ({ sections, style, dar
         case 'disclosure':
           return (
             <View style={styles.disclosureIndicator}>
-              <Text style={[styles.disclosureText, { color: theme.colors.systemGray2 }]}>
-                ›
+              <Text style={[styles.disclosureText, { color: theme.colors.secondaryLabel }]}>
+                →
               </Text>
             </View>
           );
+        case 'icon':
+          return item.icon;
         case 'value':
           return (
             <Text style={[styles.valueText, { color: theme.colors.systemGray }]}>
@@ -87,7 +89,7 @@ export const SettingsList: React.FC<SettingsListProps> = ({ sections, style, dar
       }
     };
 
-    const isInteractive = item.type === 'disclosure' || item.type === 'destructive';
+    const isInteractive = item.type === 'disclosure' || item.type === 'destructive' || item.type === 'icon';
     const ItemWrapper = isInteractive ? TouchableOpacity : View;
 
     return (
@@ -101,7 +103,6 @@ export const SettingsList: React.FC<SettingsListProps> = ({ sections, style, dar
         accessibilityRole={item.type === 'toggle' ? 'switch' : 'button'}
       >
         <View style={styles.itemContent}>
-          {item.icon && <View style={styles.iconContainer}>{item.icon}</View>}
           <View style={styles.textContainer}>
             <Text
               style={[
@@ -217,14 +218,14 @@ const styles = StyleSheet.create({
     marginLeft: scaleWidth(8),
   },
   disclosureIndicator: {
-    width: scaleWidth(7),
-    height: scaleHeight(13),
+    width: scaleWidth(20),
+    height: scaleHeight(20),
     alignItems: 'center',
     justifyContent: 'center',
   },
   disclosureText: {
-    fontSize: scaleFont(18),
-    fontWeight: '600',
+    fontSize: scaleFont(20),
+    fontWeight: '700',
   },
   valueText: {
     fontSize: scaleFont(17),

@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { useFrameworkReady } from '~/hooks/useFrameworkReady';
 import { useSettings } from '~/hooks/useSettings';
+import { useArretsRefresh } from '~/hooks/useArretsRefresh';
 import { COLORS } from '~/config/theme';
 
 
@@ -13,6 +14,8 @@ import { COLORS } from '~/config/theme';
 export default function RootLayout() {
   useFrameworkReady();
   const { darkMode } = useSettings();
+  // Initialize arrets refresh hook to handle first app open
+  useArretsRefresh();
 
 
   return (
