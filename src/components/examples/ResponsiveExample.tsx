@@ -73,18 +73,18 @@ export const ResponsiveExample: React.FC = () => {
               title="Primary"
               onPress={() => {}}
               size={layout.isTablet ? 'large' : 'medium'}
-              style={[
-                layout.isSmallDevice && styles.buttonFullWidth
-              ]}
+              style={
+                layout.isSmallDevice ? styles.buttonFullWidth : undefined
+              }
             />
             <Button
               title="Secondary"
               onPress={() => {}}
               variant="secondary"
               size={layout.isTablet ? 'large' : 'medium'}
-              style={[
-                layout.isSmallDevice && styles.buttonFullWidth
-              ]}
+              style={
+                layout.isSmallDevice ? styles.buttonFullWidth : undefined
+              }
             />
           </View>
         </View>

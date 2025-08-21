@@ -50,5 +50,5 @@ export const URL_PARAMS = {
 export const DEFAULT_SETTINGS = {
   darkMode: false,
   language: UI_CONFIG.LANGUAGES.EN,
-  timeFormat: "minutes"
+  timeFormat: "minutes" as const
 };

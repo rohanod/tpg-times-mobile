@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { COLORS } from '../../config/theme';
+import { COLORS } from '~/config/theme';
 import { useSettings } from '../../hooks/useSettings';
 import { scaleHeight, scaleWidth, isTablet } from '../../utils/responsive';
 
@@ -20,8 +20,6 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        // Remove extra bottom padding applied to scenes so content can get closer to tab bar
-        sceneContainerStyle: { paddingBottom: 0 },
         tabBarStyle: {
           backgroundColor: COLORS.TAB_BAR.BACKGROUND,
           paddingBottom: tabBarPaddingBottom,

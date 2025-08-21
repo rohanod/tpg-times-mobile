@@ -118,7 +118,6 @@ class LocationService {
       
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
-        timeout: 15000, // 15 second timeout
       });
 
       const result: LocationResult = {

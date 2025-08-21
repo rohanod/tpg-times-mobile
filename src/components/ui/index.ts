@@ -9,3 +9,4 @@ export { SearchBar } from './SearchBar';
 export { FilterChip } from './FilterChip';
 export { SectionHeader } from './SectionHeader';
 export { SettingsList } from './SettingsList';
+export type { SettingsSection, SettingsItem } from './SettingsList';
