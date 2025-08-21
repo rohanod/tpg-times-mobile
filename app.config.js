@@ -82,6 +82,13 @@ export default {
         }
       ],
       [
+        "@bacons/apple-targets",
+        {
+          appleTeamId: "XXXXXXXXXX",
+          targets: ["./targets/widget/expo-target.config.js"]
+        }
+      ],
+      [
         "expo-build-properties",
         {
           ios: {

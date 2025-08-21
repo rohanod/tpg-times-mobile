@@ -39,7 +39,8 @@
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",
     "react-native-web": "^0.20.0",
-    "zustand": "^4.5.2"
+    "zustand": "^4.5.2",
+    "@bacons/apple-targets": "^0.0.4"
   },
   "devDependencies": {
     "@babel/plugin-transform-class-properties": "^7.23.3",
