@@ -3,6 +3,7 @@ import {
   Keyboard,
   View,
   StyleSheet,
+  FlatList,
 } from 'react-native';
 import {
   useSharedValue,
@@ -27,6 +28,7 @@ import { SearchSection } from '../organisms/SearchSection';
 import { VehicleFilters } from '../organisms/VehicleFilters';
 import { DeparturesList } from '../organisms/DeparturesList';
 import { SuggestionsContainer } from '../organisms/SuggestionsContainer';
+import { StopSuggestion } from '../molecules/StopSuggestion';
 import { ResponsiveLayout } from '../layout/ResponsiveLayout';
 import { PageHeader } from '../layout/PageHeader';
 import { Toast, type ToastType } from '../Toast';
@@ -44,6 +46,7 @@ export const StopsPage: React.FC = () => {
   const [vehicleNumberFilters, setVehicleNumberFilters] = useState<string[]>([]);
   const [locationLoading, setLocationLoading] = useState(false);
   const [vehicleOrder, setVehicleOrder] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<Stop[]>([]);
   
   // Toast state
   const [toastVisible, setToastVisible] = useState(false);
@@ -80,7 +83,7 @@ export const StopsPage: React.FC = () => {
 
   // Hooks
   const { currentStop, setCurrentStop } = useCurrentStop();
-  const { findNearestStop } = useArretsCsv();
+  const { findNearestStop, getStopSuggestions } = useArretsCsv();
   const {
     departures,
     currentStopName,
@@ -222,6 +225,28 @@ export const StopsPage: React.FC = () => {
     }
   );
 
+  // Fetch stop suggestions from arrets.csv when typing
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const q = searchQuery.trim();
+      if (inputFocused && q.length >= 2) {
+        try {
+          const items = await getStopSuggestions(q);
+          if (!cancelled) setSuggestions(items);
+        } catch {
+          if (!cancelled) setSuggestions([]);
+        }
+      } else {
+        if (!cancelled) setSuggestions([]);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [inputFocused, searchQuery, getStopSuggestions]);
+
   // Keyboard state animations - sequenced for proper order
   useEffect(() => {
     if (inputFocused) {
@@ -284,14 +309,20 @@ export const StopsPage: React.FC = () => {
   // Stop selection
   const handleStopSelect = useCallback(
     async (stop: Stop) => {
-      setSelectedStop(stop);
-      setCurrentStop(stop);
-      setInputFocused(false);
-      Keyboard.dismiss();
-      setSearchQuery('');
       try {
-        await fetchDepartures(stop, vehicleNumberFilters);
+        // First fetch departures to get authoritative formatted stop name
+        const result = await fetchDepartures(stop, vehicleNumberFilters);
+        const formatted = result?.formattedStopName || stop.rawName || '';
+        setSearchQuery(formatted);
+
+        // Update selected stop and start auto refresh
+        setSelectedStop(stop);
+        setCurrentStop(stop);
         startAutoRefresh(stop, vehicleNumberFilters);
+
+        // Close keyboard after selection
+        setInputFocused(false);
+        Keyboard.dismiss();
       } catch (error) {
         console.error('Error fetching departures or starting auto-refresh:', error);
       }
@@ -459,7 +490,16 @@ export const StopsPage: React.FC = () => {
           isVisible={inputFocused}
           animatedStyle={animatedSuggestionsStyle}
         >
-          {/* Future: Add stop suggestions here */}
+          <FlatList
+            data={suggestions}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <StopSuggestion stop={item} onPress={handleStopSelect} />
+            )}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          />
         </SuggestionsContainer>
 
         {/* Departures List - now keyboard-aware */}

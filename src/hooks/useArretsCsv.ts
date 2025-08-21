@@ -397,7 +397,7 @@ export const useArretsCsv = () => {
     return validSuggestions;
   };
 
-  const getStopSuggestions = async (query: string): Promise<StopSuggestion[]> => {
+  const getStopSuggestions = useCallback(async (query: string): Promise<StopSuggestion[]> => {
     if (!query || query.trim().length < 2) {
       return [];
     }
@@ -460,7 +460,7 @@ export const useArretsCsv = () => {
       id: stop.id,
       rawName: stop.fullName
     }));
-  };
+  }, [arretsList, fetchArretsCsv]);
 
   const refreshCache = useCallback(async (): Promise<void> => {
     await fetchArretsCsv(true);

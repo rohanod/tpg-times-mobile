@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
-import DepartureService, { type GroupedDeparture, type Stop } from '../services/DepartureService';
+import DepartureService, { type GroupedDeparture, type Stop, type DepartureServiceResult } from '../services/DepartureService';
 
 interface UseDepartureServiceReturn {
   departures: GroupedDeparture[];
@@ -8,7 +8,7 @@ interface UseDepartureServiceReturn {
   loading: boolean;
   error: string | null;
   refreshing: boolean;
-  fetchDepartures: (stop: Stop, vehicleFilters?: string[]) => Promise<void>;
+  fetchDepartures: (stop: Stop, vehicleFilters?: string[]) => Promise<DepartureServiceResult | null>;
   startAutoRefresh: (stop: Stop, vehicleFilters?: string[]) => void;
   stopAutoRefresh: () => void;
   manualRefresh: () => Promise<void>;
@@ -28,7 +28,7 @@ export function useDepartureService(): UseDepartureServiceReturn {
   const fetchDepartures = useCallback(async (stop: Stop, vehicleFilters: string[] = []) => {
     if (!stop?.id) {
       setError('Invalid stop provided');
-      return;
+      return null;
     }
 
     setLoading(true);
@@ -44,6 +44,7 @@ export function useDepartureService(): UseDepartureServiceReturn {
       if (__DEV__) {
         console.log(`Fetched ${result.departures.length} departures for ${result.formattedStopName}`);
       }
+      return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch departures';
       
@@ -64,6 +65,7 @@ export function useDepartureService(): UseDepartureServiceReturn {
       }
       
       // Don't clear departures on error, keep showing last known data
+      return null;
     } finally {
       setLoading(false);
     }
