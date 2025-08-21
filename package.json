@@ -15,6 +15,7 @@
     "update:ios": "eas update --auto -p ios"
   },
   "dependencies": {
+    "@bacons/apple-targets": "^3.0.2",
     "@expo/vector-icons": "^14.0.4",
     "@gorhom/bottom-sheet": "^5",
     "@react-native-async-storage/async-storage": "2.1.2",

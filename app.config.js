@@ -88,6 +88,12 @@ export default {
             useHermes: false
           }
         }
+      ],
+      [
+        "@bacons/apple-targets",
+        {
+          appleTeamId: "XXXXXXXXXX"
+        }
       ]
     ],
     experiments: {

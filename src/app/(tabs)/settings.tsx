@@ -3,6 +3,7 @@ import { StyleSheet, ScrollView, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useSettings } from '../../hooks/useSettings';
 import { useEASUpdate } from '../../hooks/useEASUpdate';
 import { useArretsRefresh } from '../../hooks/useArretsRefresh';
@@ -11,6 +12,7 @@ import { SectionHeader, SettingsList, type SettingsSection } from '~/components/
 import { scaleHeight, scaleWidth } from '~/utils/responsive';
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const {
     darkMode,
     timeFormat,
@@ -179,6 +181,27 @@ export default function SettingsScreen() {
           type: 'toggle',
           value: timeFormat === 'minutes',
           onValueChange: (value) => setTimeFormat(value ? 'minutes' : 'time'),
+        },
+      ],
+    },
+    {
+      id: 'widgets',
+      title: language === 'en' ? 'Widgets' : 'Widgets',
+      items: [
+        {
+          id: 'configure-widget',
+          title: language === 'en' ? 'Configure Widget' : 'Configurer le Widget',
+          subtitle: language === 'en' ? 'Set up your home screen widget' : 'Configurez votre widget d\'écran d\'accueil',
+          type: 'icon',
+          onPress: () => router.push('/widget-config'),
+          icon: (
+            <MaterialIcons
+              name="widgets"
+              size={20}
+              color={theme.colors.secondaryLabel}
+            />
+          ),
+          accessibilityLabel: language === 'en' ? 'Configure widget' : 'Configurer le widget',
         },
       ],
     },
