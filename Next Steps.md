@@ -78,7 +78,7 @@ https://github.com/gorhom/react-native-bottom-sheet -->
 <!-- 21. Make it update the timings every time one of the circle buttons are pressed if it has been more than 6 seconds since the last update/press on circle button -->
 <!-- 22. The tab names don't change language when I switch language -->
 <!-- 23. Don't have the white outline for the bus/tram number items -->
-24. Make the container with the bus/tram number items fill the screen but leave space for the other elements and the tabs
+<!-- 24. Make the container with the bus/tram number items fill the screen but leave space for the other elements and the tabs -->
 25. Add a favourites stop feature where if the user has a currently selected stop in the home page, the favourites menu will have a "Add this stop to favourites" button and once clicked on, will add the stop to favourites and if there are any filters, it will save them too. Once clicked on a favourite, it will go back to main page with stop name and bus/tram number(if applicable) filled out and make sure there is a delete button to remove a favourite. Use context7 to look through the expo docs to find expo-sqlite so that we can have it save favourites. This is python code for you to get an idea of what tool calls you should make:
 
 id = resolve-library-name(libraryName="expo")
@@ -150,7 +150,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 # LAST:
 - Make sure it is accessible
-- Add a tutorial for the first time opening the app and optional re-do tutorial in settings screen but add a skip button and make it one of those interactive ones so there is a small box showing instructions for something then you do the action and click next and the first page when opening the app for the first time is en/fr selection
+- Add a tutorial for the first time opening the app and optional re-do tutorial in settings screen but add a skip button and make it one of those interactive ones so there is a small box showing instructions for something then you do the action and click next
 - Make sure all the text is properly available in both english and french
 - Remove anything not needed
 - Make sure it doesn't crash

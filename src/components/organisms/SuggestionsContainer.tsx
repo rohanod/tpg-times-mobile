@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { useSettings } from '~/hooks/useSettings';
+import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { borderRadius, spacing } from '~/utils/responsive';
 import { LAYOUT } from '~/utils/layout';
 
@@ -23,6 +24,7 @@ const SuggestionsContainerComponent: React.FC<SuggestionsContainerProps> = ({
   animatedStyle,
 }) => {
   const { darkMode } = useSettings();
+  const theme = getResponsiveTheme(darkMode);
 
   const containerAnimatedStyle = useAnimatedStyle(() => {
     // Calculate the available space between search bar and keyboard
@@ -42,6 +44,8 @@ const SuggestionsContainerComponent: React.FC<SuggestionsContainerProps> = ({
             ? 'rgba(28, 28, 30, 0.95)'
             : 'rgba(255, 255, 255, 0.95)',
           shadowColor: darkMode ? '#000' : '#000',
+          borderColor: theme.border,
+          borderWidth: 1,
         },
         containerAnimatedStyle,
         animatedStyle,

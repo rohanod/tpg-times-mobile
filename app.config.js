@@ -60,9 +60,6 @@ export default {
         dark: "./assets/images/ios-dark.png",
         tinted: "./assets/images/ios-tinted.png"
       },
-      catalyst: {
-        enabled: true
-      }
     },
     // web: {
     //   output: "single",

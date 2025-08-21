@@ -1,13 +1,14 @@
 import React from 'react';
-import { StyleSheet, ScrollView } from 'react-native';
+import { StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '../../hooks/useSettings';
+import { useEASUpdate } from '../../hooks/useEASUpdate';
 import { getResponsiveTheme } from '../../utils/responsiveTheme';
 import { SectionHeader, SettingsList, type SettingsSection } from '~/components/ui';
 import { scaleHeight, scaleWidth } from '~/utils/responsive';
 
 export default function SettingsScreen() {
-  const { 
+  const {
     darkMode,
     timeFormat,
     setTimeFormat,
@@ -15,8 +16,33 @@ export default function SettingsScreen() {
     setLanguage,
     setDarkMode
   } = useSettings();
-  
+
+  const { updateState, performUpdate } = useEASUpdate();
+
   const theme = getResponsiveTheme(darkMode);
+
+  const handleUpdatePress = async () => {
+    if (updateState.isUpdating) {
+      return;
+    }
+
+    Alert.alert(
+      language === 'en' ? 'Update App' : 'Mettre à Jour l\'App',
+      language === 'en'
+        ? 'Check for and install the latest update?'
+        : 'Vérifier et installer la dernière mise à jour ?',
+      [
+        {
+          text: language === 'en' ? 'Cancel' : 'Annuler',
+          style: 'cancel',
+        },
+        {
+          text: language === 'en' ? 'Update' : 'Mettre à Jour',
+          onPress: performUpdate,
+        },
+      ]
+    );
+  };
 
 
 
@@ -62,6 +88,23 @@ export default function SettingsScreen() {
           type: 'toggle',
           value: timeFormat === 'minutes',
           onValueChange: (value) => setTimeFormat(value ? 'minutes' : 'time'),
+        },
+      ],
+    },
+    {
+      id: 'app',
+      title: language === 'en' ? 'App' : 'Application',
+      items: [
+        {
+          id: 'update',
+          title: language === 'en' ? 'Update App' : 'Mettre à Jour l\'App',
+          subtitle: updateState.isUpdating
+            ? (language === 'en' ? 'Updating...' : 'Mise à jour...')
+            : (language === 'en' ? 'Check for and install updates' : 'Vérifier et installer les mises à jour'),
+          type: 'disclosure',
+          onPress: handleUpdatePress,
+          disabled: updateState.isUpdating,
+          accessibilityLabel: language === 'en' ? 'Update application' : 'Mettre à jour l\'application',
         },
       ],
     },
