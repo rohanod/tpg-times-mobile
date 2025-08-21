@@ -18,7 +18,7 @@
     <array>
         <dict>
             <key>INIntentCategory</key>
-            <string>information</string>
+            <string>generic</string>
             <key>INIntentConfigurable</key>
             <true/>
             <key>INIntentDescription</key>
@@ -156,7 +156,7 @@
             <key>INIntentType</key>
             <string>Custom</string>
             <key>INIntentVerb</key>
-            <string>unknown</string>
+            <string>View</string>
         </dict>
     </array>
     <key>INTypes</key>
