@@ -150,7 +150,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 # LAST:
 - Make sure it is accessible
-- Add a tutorial for the first time opening the app and optional re-do tutorial in settings screen but add a skip button and make it one of those interactive ones so there is a small box showing instructions for something then you do the action and click next
+- Add a tutorial for the first time opening the app and optional re-do tutorial in settings screen but add a skip button and make it one of those interactive ones so there is a small box showing instructions for something then you do the action and click next. Use https://www.npmjs.com/package/react-native-walkthrough-tooltip
 - Make sure all the text is properly available in both english and french
 - Remove anything not needed
 - Make sure it doesn't crash
