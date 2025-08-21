@@ -9,6 +9,7 @@
     "deploy:web": "expo export --platform web && eas deploy",
     "run:iphone": "APP_VARIANT=development expo run:ios --device 00008110-001129212111401E",
     "deploy:iphone": "expo run:ios --device 00008110-001129212111401E --configuration Release",
+    "deploy:iphone:widget": "./build-with-widget.sh",
     "lint": "expo lint",
     "android": "expo run:android",
     "ios": "expo run:ios",

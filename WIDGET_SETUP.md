@@ -16,15 +16,25 @@ The TPG Times widget provides:
 
 ### 1. Build and Install the App
 
-The widget is included when you build the app with the existing scripts:
+The widget is included when you build the app. Due to provisioning requirements for the widget extension, use the dedicated widget build script:
 
 ```bash
-# For development builds
-pnpm run run:iphone
+# For release builds with widget support
+pnpm run deploy:iphone:widget
 
-# For release builds  
-pnpm run deploy:iphone
+# Alternative: Run the build script directly
+./build-with-widget.sh
 ```
+
+**Note**: The widget requires automatic code signing to be enabled. The build script handles this automatically by:
+- Regenerating the iOS project with widget support
+- Enabling automatic provisioning updates
+- Setting up proper bundle identifiers for both app and widget
+
+If you encounter signing issues, ensure:
+1. You're signed into Xcode with your Apple Developer account
+2. Your device is registered in your developer account
+3. Automatic signing is enabled in Xcode preferences
 
 ### 2. Configure Your Widget
 
@@ -103,6 +113,22 @@ pnpm run deploy:iphone
 - Use the "Test Widget Data" feature in the app to verify your settings
 - Make sure the Stop ID matches exactly what's shown in the app
 - Vehicle filters are case-sensitive and should match line numbers exactly
+
+### Build and Provisioning Issues
+- **"No profiles found" error**: Use the `pnpm run deploy:iphone:widget` script instead of the regular deploy command
+- **Automatic signing disabled**: The widget build script enables automatic signing and provisioning updates
+- **Team ID issues**: The build script automatically detects your Apple Developer Team ID
+- **Bundle identifier conflicts**: The widget gets its own bundle identifier (main app + ".widget")
+
+### Manual Xcode Build
+If the automated script doesn't work, you can build manually in Xcode:
+1. Run `npx expo prebuild --platform ios --clean`
+2. Open `ios/TPGTimes.xcworkspace` in Xcode
+3. Select the TPGTimes scheme
+4. In Project Settings → Signing & Capabilities:
+   - Enable "Automatically manage signing" for both TPGTimes and tpgwidget targets
+   - Ensure the same Team is selected for both targets
+5. Build and run the project (⌘+R)
 
 ## Technical Details
 

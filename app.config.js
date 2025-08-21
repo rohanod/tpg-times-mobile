@@ -92,7 +92,7 @@ export default {
       [
         "@bacons/apple-targets",
         {
-          appleTeamId: "XXXXXXXXXX"
+          // appleTeamId will be determined automatically by Xcode
         }
       ]
     ],
