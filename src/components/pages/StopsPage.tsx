@@ -13,7 +13,6 @@ import {
   Easing,
   useAnimatedReaction,
   interpolate,
-  Extrapolation,
 } from 'react-native-reanimated';
 
 import { useSettings } from '~/hooks/useSettings';
@@ -40,7 +39,6 @@ export const StopsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   // Suggestions disabled
   const [inputFocused, setInputFocused] = useState(false);
-  const [vehicleFilterFocused, setVehicleFilterFocused] = useState(false);
   const [selectedStop, setSelectedStop] = useState<Stop | null>(null);
   const [vehicleNumberInput, setVehicleNumberInput] = useState('');
   const [vehicleNumberFilters, setVehicleNumberFilters] = useState<string[]>([]);
@@ -61,16 +59,13 @@ export const StopsPage: React.FC = () => {
 
   // Animated Values
   const searchEntranceProgress = useSharedValue(0);
-  const filtersEntranceProgress = useSharedValue(0);
-  const departuresEntranceProgress = useSharedValue(0);
-  const vehicleFilterMoveUpProgress = useSharedValue(0);
+  const filtersVisibilityProgress = useSharedValue(0);
+  const departuresVisibilityProgress = useSharedValue(0);
   
-  // New animated values for bouncy keyboard transitions
-  const departuresExitProgress = useSharedValue(0);
-  const departuresReturnProgress = useSharedValue(0);
+  // Track previous input focus to avoid triggering initial duplicate animations
+  const wasInputFocusedRef = useRef(false);
   
   // Animation sequencing for proper order: filters out -> suggestions in
-  const filtersExitProgress = useSharedValue(0);
   const suggestionsEnterProgress = useSharedValue(0);
 
   // Constants for layout calculations
@@ -116,7 +111,6 @@ export const StopsPage: React.FC = () => {
     const onKeyboardHide = () => {
       setInputFocused(false);
       vehicleFilterFocusedRef.current = false;
-      setVehicleFilterFocused(false);
     };
 
     const showSubscription = Keyboard.addListener('keyboardDidShow', onKeyboardShow);
@@ -134,20 +128,19 @@ export const StopsPage: React.FC = () => {
     opacity: searchEntranceProgress.value,
   }));
 
-  const animatedFiltersEntranceStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: (1 - filtersEntranceProgress.value) * -screenDimensions.width }],
-    opacity: filtersEntranceProgress.value,
+  // Filters: single visibility progress to avoid double animations
+  const animatedFiltersStyle = useAnimatedStyle(() => ({
+    opacity: filtersVisibilityProgress.value,
+    transform: [
+      {
+        translateX: interpolate(
+          filtersVisibilityProgress.value,
+          [0, 1],
+          [-screenDimensions.width, 0]
+        ),
+      },
+    ],
   }));
-
-  // Updated filters style for keyboard-aware behavior - slide out first
-  const animatedFiltersStyle = useAnimatedStyle(() => {
-    return {
-      opacity: interpolate(filtersExitProgress.value, [0, 1], [1, 0]),
-      transform: [
-        { translateX: filtersExitProgress.value * -screenDimensions.width }
-      ],
-    };
-  });
 
   // Suggestions container style with delayed entrance and proper positioning
   const animatedSuggestionsStyle = useAnimatedStyle(() => {
@@ -173,44 +166,32 @@ export const StopsPage: React.FC = () => {
     };
   });
 
-  // Updated departures style with bouncy spring animations
+  // Departures container animation: match autosuggestions (single progress for enter/leave)
   const animatedDeparturesStyle = useAnimatedStyle(() => {
     return {
-      opacity: interpolate(departuresExitProgress.value, [0, 1], [1, 0]),
+      opacity: departuresVisibilityProgress.value,
       transform: [
-        { 
+        {
           translateY: interpolate(
-            departuresExitProgress.value,
+            departuresVisibilityProgress.value,
             [0, 1],
-            [0, screenHeight * 0.6], // slide down with spring bounce
-            Extrapolation.CLAMP
-          )
+            [50, 0]
+          ),
         },
         {
           scale: interpolate(
-            departuresReturnProgress.value,
+            departuresVisibilityProgress.value,
             [0, 1],
-            [0.85, 1], // slight scale animation for return
-            Extrapolation.CLAMP
-          )
-        }
+            [0.9, 1]
+          ),
+        },
       ],
     };
   });
 
-  // Initial entrance for departures: slide up from bottom and fade in
-  const animatedDeparturesEntranceStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: (1 - departuresEntranceProgress.value) * screenDimensions.height }],
-    opacity: departuresEntranceProgress.value,
-  }));
-
-  // Keep layout stable when focusing vehicle number filter
+  // Keep layout stable for search section (no additional transforms)
   const animatedSearchHideStyle = useAnimatedStyle(() => ({
     opacity: 1,
-    transform: [{ translateY: 0 }],
-  }));
-
-  const animatedVehicleFilterMoveUpStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: 0 }],
   }));
 
@@ -220,21 +201,23 @@ export const StopsPage: React.FC = () => {
     const easing = Easing.out(Easing.exp);
 
     searchEntranceProgress.value = withDelay(200, withTiming(1, { duration, easing }));
-    filtersEntranceProgress.value = withDelay(400, withTiming(1, { duration, easing }));
-  }, [searchEntranceProgress, filtersEntranceProgress]);
+    filtersVisibilityProgress.value = withDelay(400, withTiming(1, { duration, easing }));
+  }, [searchEntranceProgress, filtersVisibilityProgress]);
 
   // Start departures entrance as soon as both search and filters are fully on screen
   useAnimatedReaction(
     () => {
       'worklet';
-      return searchEntranceProgress.value >= 1 && filtersEntranceProgress.value >= 1;
+      return searchEntranceProgress.value >= 1 && filtersVisibilityProgress.value >= 1;
     },
     (ready, wasReady) => {
       'worklet';
-      if (ready && !wasReady && departuresEntranceProgress.value < 1) {
-        const duration = 700;
-        const easing = Easing.out(Easing.exp);
-        departuresEntranceProgress.value = withTiming(1, { duration, easing });
+      if (ready && !wasReady && departuresVisibilityProgress.value < 1) {
+        departuresVisibilityProgress.value = withSpring(1, {
+          damping: 12,
+          stiffness: 100,
+          mass: 1,
+        });
       }
     }
   );
@@ -243,16 +226,15 @@ export const StopsPage: React.FC = () => {
   useEffect(() => {
     if (inputFocused) {
       // Step 1: Vehicle filters slide out immediately (fast)
-      filtersExitProgress.value = withTiming(1, {
+      filtersVisibilityProgress.value = withTiming(0, {
         duration: 300,
         easing: Easing.inOut(Easing.ease),
       });
       
-      // Step 2: Departures exit with bounce (concurrent with filters)
-      departuresExitProgress.value = withSpring(1, {
-        damping: 15,
-        stiffness: 150,
-        mass: 1,
+      // Step 2: Departures fade/slide out (match autosuggestions reverse)
+      departuresVisibilityProgress.value = withTiming(0, {
+        duration: 200,
+        easing: Easing.inOut(Easing.ease),
       });
       
       // Step 3: Suggestions enter after filters are out (delayed)
@@ -261,8 +243,6 @@ export const StopsPage: React.FC = () => {
         stiffness: 100,
         mass: 1,
       }));
-      
-      departuresReturnProgress.value = 0;
     } else {
       // Reverse sequence: suggestions out first, then filters back in
       suggestionsEnterProgress.value = withTiming(0, {
@@ -271,39 +251,24 @@ export const StopsPage: React.FC = () => {
       });
       
       // Filters slide back in after suggestions are gone
-      filtersExitProgress.value = withDelay(100, withTiming(0, {
+      filtersVisibilityProgress.value = withDelay(100, withTiming(1, {
         duration: 400,
         easing: Easing.out(Easing.ease),
       }));
       
-      // Departures return with bounce
-      departuresExitProgress.value = withSpring(0, {
-        damping: 15,
-        stiffness: 120,
-        mass: 1.2,
-      });
-      departuresReturnProgress.value = withDelay(100, withSpring(1, {
-        damping: 12,
-        stiffness: 100,
-        mass: 1,
-      }));
+      // Only show departures again if we are returning from focus (avoid double init animation)
+      if (wasInputFocusedRef.current) {
+        departuresVisibilityProgress.value = withDelay(100, withSpring(1, {
+          damping: 12,
+          stiffness: 100,
+          mass: 1,
+        }));
+      }
     }
-  }, [inputFocused, departuresExitProgress, departuresReturnProgress, filtersExitProgress, suggestionsEnterProgress]);
+    wasInputFocusedRef.current = inputFocused;
+  }, [inputFocused, suggestionsEnterProgress, departuresVisibilityProgress, filtersVisibilityProgress]);
 
-  // Vehicle filter focus animations
-  useEffect(() => {
-    if (vehicleFilterFocused) {
-      vehicleFilterMoveUpProgress.value = withTiming(1, {
-        duration: 400,
-        easing: Easing.inOut(Easing.ease)
-      });
-    } else {
-      vehicleFilterMoveUpProgress.value = withTiming(0, {
-        duration: 400,
-        easing: Easing.inOut(Easing.ease)
-      });
-    }
-  }, [vehicleFilterFocused, vehicleFilterMoveUpProgress]);
+  // Vehicle filter focus animations removed to avoid stacking transforms; focus still tracked for keyboard logic
 
   const onSearchChange = useCallback(
     (text: string) => {
@@ -389,12 +354,10 @@ export const StopsPage: React.FC = () => {
   // Vehicle filter focus handlers
   const handleVehicleFilterFocus = useCallback(() => {
     vehicleFilterFocusedRef.current = true;
-    setVehicleFilterFocused(true);
   }, []);
 
   const handleVehicleFilterBlur = useCallback(() => {
     vehicleFilterFocusedRef.current = false;
-    setVehicleFilterFocused(false);
   }, []);
 
   // Manual refresh
@@ -485,21 +448,19 @@ export const StopsPage: React.FC = () => {
           onRemoveFilter={removeVehicleNumberFilter}
           onVehicleFilterFocus={handleVehicleFilterFocus}
           onVehicleFilterBlur={handleVehicleFilterBlur}
-          animatedStyle={[animatedFiltersStyle, animatedFiltersEntranceStyle, animatedVehicleFilterMoveUpStyle]}
+          animatedStyle={[animatedFiltersStyle]}
         />
 
-        {/* Suggestions Container - positioned absolutely to not affect layout */}
-        {inputFocused && (
-          <SuggestionsContainer
-            keyboardHeight={keyboardHeight}
-            searchHeight={SEARCH_HEIGHT}
-            availableHeight={screenHeight - HEADER_HEIGHT - TAB_BAR_HEIGHT}
-            isVisible={inputFocused}
-            animatedStyle={animatedSuggestionsStyle}
-          >
-            {/* Future: Add stop suggestions here */}
-          </SuggestionsContainer>
-        )}
+        {/* Suggestions Container - always mounted to allow leaving animation */}
+        <SuggestionsContainer
+          keyboardHeight={keyboardHeight}
+          searchHeight={SEARCH_HEIGHT}
+          availableHeight={screenHeight - HEADER_HEIGHT - TAB_BAR_HEIGHT}
+          isVisible={inputFocused}
+          animatedStyle={animatedSuggestionsStyle}
+        >
+          {/* Future: Add stop suggestions here */}
+        </SuggestionsContainer>
 
         {/* Departures List - now keyboard-aware */}
         <DeparturesList
@@ -508,7 +469,7 @@ export const StopsPage: React.FC = () => {
           loading={departuresLoading}
           refreshing={refreshing}
           onRefresh={handleManualRefresh}
-          animatedStyle={[animatedDeparturesEntranceStyle, animatedDeparturesStyle]}
+          animatedStyle={[animatedDeparturesStyle]}
         />
       </View>
 

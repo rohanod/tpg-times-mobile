@@ -46,6 +46,7 @@ const SuggestionsContainerComponent: React.FC<SuggestionsContainerProps> = ({
         containerAnimatedStyle,
         animatedStyle,
       ]}
+      pointerEvents={isVisible ? 'auto' : 'none'}
     >
       {children}
     </Animated.View>
