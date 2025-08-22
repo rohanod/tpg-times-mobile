@@ -84,7 +84,7 @@ https://github.com/gorhom/react-native-bottom-sheet -->
 id = resolve-library-name(libraryName="expo")
 get-library-docs(context7CompatibleLibraryID=id, topic="sqlite")
 26. Refresh arrets.csv every month but have an option to refresh manually in settings
-27. Implement a widget where the user can choose any stop with free text input and optional number filter and it will show the timings for that stop in the widget. In the repo, there is a README.md and an example folder. This is the url for the repo. Clone it and analyse it: https://github.com/EvanBacon/expo-apple-widget-example. Make it integrate properly with the deploy:iphone and run:iphone script. Use all the tools to help.
+27. Implement a widget where the user can choose any stop with free text input and optional number filter and it will show the timings for that stop in the widget. In the repo, there is a README.md and an example folder. This is the url for the repo. Clone it and analyse it: https://github.com/EvanBacon/expo-apple-widget-example. Make it integrate properly with the deploy:iphone and run:iphone script. Use all the tools to help. First create a full 20+ step plan. Clone the repo here not at /tmp.
 28. If the background for the bus circles are black in dark mode, add a white border but if it is white in light mode, add black border and for ones that have no colour(~~ in colour field), just have white background with black border and black text
 29. Make the splash screen the animated assets/images/loading.svg
 30. If there are multiple stops with the same name, just show it once
