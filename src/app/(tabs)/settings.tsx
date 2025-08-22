@@ -9,6 +9,7 @@ import { useArretsRefresh } from '../../hooks/useArretsRefresh';
 import { getResponsiveTheme } from '../../utils/responsiveTheme';
 import { SectionHeader, SettingsList, type SettingsSection } from '~/components/ui';
 import { scaleHeight, scaleWidth } from '~/utils/responsive';
+import { useRouter } from 'expo-router';
 
 export default function SettingsScreen() {
   const {
@@ -22,6 +23,7 @@ export default function SettingsScreen() {
 
   const { updateState, performUpdate } = useEASUpdate();
   const { handleRefresh, isRefreshing } = useArretsRefresh();
+  const router = useRouter();
 
   const theme = getResponsiveTheme(darkMode);
 
@@ -151,6 +153,27 @@ export default function SettingsScreen() {
           type: 'toggle',
           value: darkMode,
           onValueChange: setDarkMode,
+        },
+      ],
+    },
+    {
+      id: 'widget',
+      title: language === 'en' ? 'Widget' : 'Widget',
+      items: [
+        {
+          id: 'configure-widget',
+          title: language === 'en' ? 'Configure Widget' : 'Configurer le Widget',
+          subtitle: language === 'en' ? 'Set up the home screen widget' : 'Configurer le widget de l\'écran d\'accueil',
+          type: 'icon',
+          onPress: () => router.push('/widget-settings'),
+          icon: (
+            <MaterialIcons
+              name="widgets"
+              size={20}
+              color={theme.colors.secondaryLabel}
+            />
+          ),
+          accessibilityLabel: language === 'en' ? 'Configure widget' : 'Configurer le widget',
         },
       ],
     },

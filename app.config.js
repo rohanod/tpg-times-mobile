@@ -52,6 +52,11 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: getUniqueIdentifier(),
+      entitlements: {
+        'com.apple.security.application-groups': [
+          'group.com.rohanodwyer.tpgtimes',
+        ],
+      },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false
       },
@@ -73,6 +78,7 @@ export default {
     //   crossorigin: "use-credentials"
     // },
     plugins: [
+      "@bacons/apple-targets",
       "expo-updates",
       "expo-router",
       [
