@@ -61,17 +61,17 @@ export default {
         tinted: "./assets/images/ios-tinted.png"
       },
     },
-    // web: {
-    //   output: "single",
-    //   favicon: "./assets/images/favicon.png",
-    //   name: IS_DEV ? "TPG Times (Dev)" : "TPG Times",
-    //   shortName: IS_DEV ? "TPG Dev" : "TPG Times",
-    //   startUrl: ".",
-    //   scope: "/",
-    //   themeColor: "#FF6600",
-    //   backgroundColor: "#ffffff",
-    //   crossorigin: "use-credentials"
-    // },
+    web: {
+      // output: "single",
+      favicon: "./assets/images/ios-light.png",
+      name: IS_DEV ? "TPG Times (Dev)" : "TPG Times",
+      shortName: IS_DEV ? "TPG Dev" : "TPG Times",
+      startUrl: ".",
+      scope: "/",
+      themeColor: "#FF6600",
+      backgroundColor: "#ffffff",
+      crossorigin: "use-credentials"
+    },
     plugins: [
       "expo-updates",
       "expo-router",
