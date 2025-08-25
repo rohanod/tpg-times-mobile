@@ -50,7 +50,7 @@ const LineTimesSheet = React.forwardRef<LineTimesSheetRef, LineTimesSheetProps>(
     return (
       <View style={styles.headerRow}>
         <View style={[styles.badge, { backgroundColor: selected.color }]}>
-          <Text style={styles.badgeText}>{selected.number}</Text>
+          <Text style={[styles.badgeText, { color: selected.textColor }]}>{selected.number}</Text>
         </View>
         <Text style={[styles.headerTitle, { color: theme.text }]}>
           {selected.vehicleType} {selected.number}
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: {
-    color: '#fff',
+    color: '#fff', // overridden dynamically by selected.textColor
     fontWeight: 'bold',
     fontSize: scaleFont(14),
   },

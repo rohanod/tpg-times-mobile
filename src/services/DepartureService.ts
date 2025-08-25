@@ -23,13 +23,15 @@ export interface Departure {
   departure: moment.Moment;
   minutes: number;
   delay: number;
-  color: string;
+  color: string; // background color (line color)
+  textColor: string; // text color for line label
 }
 
 export interface GroupedDeparture {
   vehicleType: string;
   number: string;
-  color: string;
+  color: string; // background color (line color)
+  textColor: string; // text color for line label
   destinations: {
     [destination: string]: Departure[];
   };
@@ -271,6 +273,10 @@ class DepartureService {
             moment.duration(departure.diff(nowMoment)).asMinutes()
           );
           
+          const [bg, text] = (conn.color || '').split('~');
+          const bgColor = bg && bg.length > 0 ? `#${bg}` : '#FF6600';
+          const textColor = text && text.length > 0 ? `#${text}` : '#FFFFFF';
+
           return {
             vehicleType: conn.type === 'tram' ? 'Tram' : 'Bus',
             number: conn.line || '',
@@ -278,7 +284,8 @@ class DepartureService {
             departure,
             minutes: minutesUntilDeparture,
             delay: conn.delay ?? 0,
-            color: conn.color ? `#${conn.color.split('~')[0]}` : '#FF6600'
+            color: bgColor,
+            textColor,
           };
         } catch (error) {
           console.error('Error processing departure:', error);
@@ -293,14 +300,15 @@ class DepartureService {
     departures.forEach((departure) => {
       const key = `${departure.vehicleType}-${departure.number}`;
       
-      if (!groupedDepartures[key]) {
-        groupedDepartures[key] = {
-          vehicleType: departure.vehicleType,
-          number: departure.number,
-          color: departure.color,
-          destinations: {}
-        };
-      }
+        if (!groupedDepartures[key]) {
+          groupedDepartures[key] = {
+            vehicleType: departure.vehicleType,
+            number: departure.number,
+            color: departure.color,
+            textColor: departure.textColor,
+            destinations: {}
+          };
+        }
       
       if (!groupedDepartures[key].destinations[departure.destination]) {
         groupedDepartures[key].destinations[departure.destination] = [];

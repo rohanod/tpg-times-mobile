@@ -80,7 +80,7 @@ const DepartureCardComponent: React.FC<DepartureCardProps> = ({
         accessibilityHint={language === 'en' ? 'Shows upcoming times' : 'Affiche les prochains horaires'}
       >
         <View style={[styles.vehicleIcon, { backgroundColor: departure.color }]}>
-          <Text style={styles.vehicleNumber}>{departure.number}</Text>
+          <Text style={[styles.vehicleNumber, { color: departure.textColor }]}>{departure.number}</Text>
         </View>
         <View style={styles.departureInfo}>
           <View style={styles.titleRow}>
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   vehicleNumber: {
-    color: 'white',
+    color: 'white', // overridden dynamically by departure.textColor
     fontSize: scaleFont(14),
     fontWeight: 'bold',
   },
