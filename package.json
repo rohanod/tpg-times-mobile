@@ -15,7 +15,6 @@
     "update:ios": "eas update --auto -p ios"
   },
   "dependencies": {
-    "@babel/plugin-syntax-import-meta": "^7.10.4",
     "@expo/vector-icons": "^14.0.4",
     "@gorhom/bottom-sheet": "^5",
     "@react-native-async-storage/async-storage": "2.1.2",

@@ -62,7 +62,7 @@ export default {
       },
     },
     web: {
-      // output: "single",
+      output: "single",
       favicon: "./assets/images/ios-light.png",
       name: IS_DEV ? "TPG Times (Dev)" : "TPG Times",
       shortName: IS_DEV ? "TPG Dev" : "TPG Times",
