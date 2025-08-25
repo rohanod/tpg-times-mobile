@@ -73,7 +73,7 @@ https://github.com/mahdidavoodi7/bottom-sheet-stepper
 https://github.com/gorhom/react-native-bottom-sheet -->
 
 <!-- 17. Make the cells have a yellow background colour when there is a delay of any time -->
-18. Right now, I think when the time format is minutes, it calculates the delays but doesn't show a warning but if the time format is 24 hour time, it doesn't calculate the delays and still doesn't show the warnings
+18. Right now, when the time format is minutes, it calculates the delays but doesn't show a warning but if the time format is 24 hour time, it doesn't calculate the delays and still doesn't show the warnings
 <!-- 19. When exiting the text box, it should clear the autocompletions -->
 <!-- 21. Make it update the timings every time one of the circle buttons are pressed if it has been more than 6 seconds since the last update/press on circle button -->
 <!-- 22. The tab names don't change language when I switch language -->
@@ -83,23 +83,23 @@ https://github.com/gorhom/react-native-bottom-sheet -->
 
 id = resolve-library-name(libraryName="expo")
 get-library-docs(context7CompatibleLibraryID=id, topic="sqlite")
-26. Refresh arrets.csv every month but have an option to refresh manually in settings
+<!-- 26. Refresh arrets.csv every month but have an option to refresh manually in settings -->
 27. Read prompts/widget.md
-28. If the background for the bus circles are black in dark mode, add a white border but if it is white in light mode, add black border and for ones that have no colour(~~ in colour field), just have white background with black border and black text
+<!-- 28. If the background for the bus circles are black in dark mode, add a white border but if it is white in light mode, add black border and for ones that have no colour(~~ in colour field), just have white background with black border and black text -->
 29. Make the splash screen the animated assets/images/loading.svg
-30. If there are multiple stops with the same name, just show it once
-31. Add url parameters for stop name and bus/tram number filters
-32. Make the border for the stop name box border, bus/tram number box border, suggestions container and individual suggestions border these colours: borderColor: darkMode ? '#333333' : '#DDDDDD'
-33. Make sure there is deduplication so if the name is exactly the same, it should only show once
-34. The suggestions don't appear fast enough.
-35. Network requests fail too often and it sometimes doesn't even try. It also should show timings immediately after the done button is pressed.
-36. When clicking on an autosuggestion, it should fill in text box and exit text box
-37. Only allow scrolling if there are more than 12 bus/tram numbers
-38. Is it possible to not have the phone's default dictionary for suggestions and add a custom list of suggestions? If so, let's do it.
-39. Make it so the vehiclesContainer has a inverse rounded corner so that it's shape is the negative of the bus/tram number input's shape so that the circles for bus/tram numbers get cut off in a way that makes it looks like there isn't a container and they are just disappearing behind the bus/tram number input.
-40. The first time I try to type a stop and wait for suggestions, it says no stops found but if I change it(Even just removing last character and re-adding it), it works. Make it so it works the first time.
-41. Sometimes it "goes crazy" and just makes a lot of requests really quickly(About 150 in 5 seconds) and logs a lot of things to the console. Make it so it doesn't make too many requests.
-41. Migrate to using icons from expo/vector icons: https://docs.expo.dev/guides/icons/
+<!-- 30. If there are multiple stops with the same name, just show it once -->
+31. Add deep link parameters for stop name and bus/tram number filters
+<!-- 32. Make the border for the stop name box border, bus/tram number box border, suggestions container and individual suggestions border these colours: borderColor: darkMode ? '#333333' : '#DDDDDD' -->
+<!-- 33. Make sure there is deduplication so if the name is exactly the same, it should only show once -->
+<!-- 34. The suggestions don't appear fast enough. -->
+35. It should show timings immediately after the done button is pressed. If there are multiple options for what the user typed, choose the closest matching stop name.
+<!-- 36. When clicking on an autosuggestion, it should fill in text box and exit text box -->
+<!-- 37. Only allow scrolling if there are more than 12 bus/tram numbers -->
+<!-- 38. Is it possible to not have the phone's default dictionary for suggestions and add a custom list of suggestions? If so, let's do it. -->
+<!-- 39. Make it so the vehiclesContainer has a inverse rounded corner so that it's shape is the negative of the bus/tram number input's shape so that the circles for bus/tram numbers get cut off in a way that makes it looks like there isn't a container and they are just disappearing behind the bus/tram number input. -->
+<!-- 40. The first time I try to type a stop and wait for suggestions, it says no stops found but if I change it(Even just removing last character and re-adding it), it works. Make it so it works the first time. -->
+<!-- 41. Sometimes it "goes crazy" and just makes a lot of requests really quickly(About 150 in 5 seconds) and logs a lot of things to the console. Make it so it doesn't make too many requests. -->
+<!-- 41. Migrate to using icons from expo/vector icons: https://docs.expo.dev/guides/icons/
 Bus:
 ```ts
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -146,7 +146,7 @@ Warning:
 ```ts
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 <MaterialIcons name="warning-amber" size={24} color="black" />
-```
+``` -->
 
 # LAST:
 - Make sure it is accessible
