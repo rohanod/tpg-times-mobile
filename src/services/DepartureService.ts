@@ -13,7 +13,10 @@ export interface Connection {
   type: 'tram' | 'bus';
   line: string;
   color: string;
-  delay: number;
+  // Some feeds provide dep_delay/arr_delay as strings like "+1", "+0", or "X" (unknown)
+  dep_delay?: string; // departure delay (e.g., "+1", "+0", "X")
+  arr_delay?: string; // arrival delay (not used for depart mode)
+  delay?: number; // legacy numeric delay (fallback)
 }
 
 export interface Departure {
@@ -46,6 +49,20 @@ export interface VehiclePosition {
   vehicleKey: string;
   position: number;
 }
+
+const parseDelay = (conn: Connection): number => {
+  // Prefer dep_delay in minutes when present. Values like "+1", "+0", or "X" (unknown)
+  const raw = (conn.dep_delay ?? conn.arr_delay ?? '').toString().trim();
+  if (!raw) {
+    return typeof conn.delay === 'number' && Number.isFinite(conn.delay) ? conn.delay : 0;
+  }
+  // Unknown or not available
+  if (raw.toUpperCase() === 'X') return 0;
+  // Strip leading plus sign
+  const normalized = raw.replace(/^\+/, '');
+  const asNum = Number(normalized);
+  return Number.isFinite(asNum) ? asNum : 0;
+};
 
 class DepartureService {
   private static instance: DepartureService;
@@ -283,7 +300,7 @@ class DepartureService {
             destination: conn.terminal.name || '',
             departure,
             minutes: minutesUntilDeparture,
-            delay: conn.delay ?? 0,
+            delay: parseDelay(conn),
             color: bgColor,
             textColor,
           };

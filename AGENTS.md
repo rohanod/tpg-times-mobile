@@ -30,6 +30,7 @@
 - Always use existing responsive utilities and theme system
 - Follow singleton service patterns for data management
 - Use memo for performance on data-heavy components
+- Always modify the files yourself, don't ask if you are allowed to start working.
 
 ## Research & Tooling Workflow
 - DO NOT USE THE FETCH TOOL FOR SEARCH ENGINES EVER.

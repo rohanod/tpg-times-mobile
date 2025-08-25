@@ -133,16 +133,25 @@ const LineTimesSheet = React.forwardRef<LineTimesSheetRef, LineTimesSheetProps>(
                 </Text>
                 <View style={styles.timesGrid}>
                   {times.slice(0, 6).map((t, idx) => {
-                    const value = formatTime(t.departure.toISOString(), timeFormat);
+                    const scheduledISO = t.departure.toISOString();
+                    const effectiveISO = t.delay > 0
+                      ? new Date(new Date(scheduledISO).getTime() + t.delay * 60000).toISOString()
+                      : scheduledISO;
+                    const value = formatTime(effectiveISO, timeFormat);
                     const isDelayed = t.delay > 0;
                     return (
-                      <View key={`${destination}-${idx}`} style={[styles.timeCell, { borderColor: theme.border }]}> 
-                        <Text style={[styles.timeText, { color: theme.text }]}>
+                      <View
+                        key={`${destination}-${idx}`}
+                        style={[
+                          styles.timeCell,
+                          { borderColor: theme.border },
+                          isDelayed && { backgroundColor: '#FFA500' }
+                        ]}
+                      > 
+                        <Text style={[styles.timeText, { color: isDelayed ? '#000' : theme.text }]}>
                           {timeFormat === 'minutes' ? `${value} ${language === 'en' ? 'min' : 'min'}` : value}
                         </Text>
-                        {isDelayed && (
-                          <Text style={styles.delayText}>+{t.delay}</Text>
-                        )}
+                        {/* hide explicit delay per requirement */}
                       </View>
                     );
                   })}

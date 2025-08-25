@@ -99,16 +99,26 @@ const DepartureCardComponent: React.FC<DepartureCardProps> = ({
               </Text>
               <View style={styles.timesContainer}>
                 {times.slice(0, 1).map((time, timeIndex) => {
-                  const timeValue = formatTime(time.departure.toISOString(), timeFormat);
+                  const scheduledISO = time.departure.toISOString();
+                  const effectiveISO = time.delay > 0
+                    ? new Date(new Date(scheduledISO).getTime() + time.delay * 60000).toISOString()
+                    : scheduledISO;
+                  const timeValue = formatTime(effectiveISO, timeFormat);
                   const isDelayed = time.delay > 0;
                   return (
-                    <View key={timeIndex} style={styles.timeChip}>
-                      <Text style={[styles.timeText, { color: theme.text }]}>
+                    <View
+                      key={timeIndex}
+                      style={[
+                        styles.timeChip,
+                        isDelayed && { backgroundColor: '#FFA500', borderRadius: borderRadius.lg, paddingHorizontal: 8, paddingVertical: 2 }
+                      ]}
+                    >
+                      <Text style={[styles.timeText, { color: isDelayed ? '#000' : theme.text }]}>
                         {timeFormat === 'minutes'
                           ? `${timeValue} ${language === 'en' ? 'min' : 'min'}`
                           : timeValue}
                       </Text>
-                      {isDelayed && <Text style={styles.delayText}>+{time.delay}</Text>}
+                       {/* hide explicit delay per requirement */}
                     </View>
                   );
                 })}
