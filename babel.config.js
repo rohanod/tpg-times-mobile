@@ -3,7 +3,6 @@ module.exports = function (api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      ['@babel/plugin-syntax-import-meta'],
       ['module-resolver', { alias: { '~': './src' } }],
       '@babel/plugin-transform-nullish-coalescing-operator',
       ['@babel/plugin-transform-class-properties', { loose: true }],

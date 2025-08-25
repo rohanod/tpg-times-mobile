@@ -7,11 +7,11 @@
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
     "start": "EXPO_NO_TELEMETRY=1 expo start",
     "deploy:web": "expo export --platform web && eas deploy",
-    "run:iphone": "APP_VARIANT=development expo run:ios --device 00008110-001129212111401E",
     "deploy:iphone": "expo run:ios --device 00008110-001129212111401E --configuration Release",
-    "lint": "expo lint",
-    "android": "expo run:android",
+    "run:iphone": "APP_VARIANT=development expo run:ios --device 00008110-001129212111401E",
     "ios": "expo run:ios",
+    "android": "expo run:android",
+    "lint": "expo lint",
     "update:ios": "eas update --auto -p ios"
   },
   "dependencies": {

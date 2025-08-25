@@ -6,5 +6,11 @@ module.exports = defineConfig([
   expoConfig,
   {
     ignores: ["dist/*"],
+  },
+  {
+    files: ["src/hooks/useSettings.ts", "src/hooks/useCurrentStop.ts"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
   }
 ]);

@@ -1,7 +1,24 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEFAULT_SETTINGS } from '../config';
+
+// Conditional imports based on platform
+let create: any;
+let persist: any;
+let createJSONStorage: any;
+
+if (Platform.OS === 'web') {
+  // Use traditional API for web to avoid import.meta issues
+  const zustandTraditional = require('zustand/traditional');
+  create = zustandTraditional.createWithEqualityFn;
+  persist = require('zustand/middleware').persist;
+  createJSONStorage = require('zustand/middleware').createJSONStorage;
+} else {
+  // Use regular API for native platforms
+  create = require('zustand').create;
+  persist = require('zustand/middleware').persist;
+  createJSONStorage = require('zustand/middleware').createJSONStorage;
+}
 
 interface SettingsState {
   language: 'en' | 'fr';
