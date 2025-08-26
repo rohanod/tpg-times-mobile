@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlatList, View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { FlatList, View, StyleSheet, StyleProp, ViewStyle, Platform } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useSettings } from '~/hooks/useSettings';
 import { DepartureCard } from '../molecules/DepartureCard';
@@ -118,6 +118,12 @@ const DeparturesListComponent: React.FC<DeparturesListProps> = ({
           onRefresh={onRefresh}
           keyboardDismissMode="on-drag"
           ListHeaderComponent={<View style={{ height: spacing.lg }} />}
+          // Web-specific: ensure smooth scrolling
+          {...((typeof Platform !== 'undefined' && Platform.OS === 'web') && {
+            scrollEnabled: true,
+            scrollEventThrottle: 16,
+            contentInsetAdjustmentBehavior: 'never',
+          })}
           onScrollBeginDrag={() => {
             isScrollingRef.current = true;
             setScrollActive(true);
@@ -185,6 +191,8 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: LAYOUT.CONTAINER_PADDING,
     borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
     shadowOffset: {
       width: 0,
       height: 4,
@@ -194,6 +202,11 @@ const styles = StyleSheet.create({
     elevation: 8,
     paddingHorizontal: spacing.md,
     marginBottom: 10, // Ensure 10px gap to tab bar
+    // Web-specific: ensure scrolling works properly
+    ...((typeof Platform !== 'undefined' && Platform.OS === 'web') && {
+      overflow: 'hidden', // Container itself doesn't scroll
+      maxHeight: '100%',
+    }),
   },
   centerContainer: {
     flex: 1,
@@ -202,6 +215,13 @@ const styles = StyleSheet.create({
   },
   list: {
     flex: 1,
+    // Web-specific: enable smooth scrolling
+    ...((typeof Platform !== 'undefined' && Platform.OS === 'web') && {
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      WebkitOverflowScrolling: 'touch',
+      overscrollBehavior: 'contain',
+    }),
   },
   blank: {
     flex: 1,

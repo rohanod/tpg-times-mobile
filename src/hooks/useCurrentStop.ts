@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 // Conditional imports based on platform
 let create: any;
 
-if (Platform.OS === 'web') {
+if (typeof Platform !== 'undefined' && Platform.OS === 'web') {
   // Use traditional API for web to avoid import.meta issues
   const zustandTraditional = require('zustand/traditional');
   create = zustandTraditional.createWithEqualityFn;

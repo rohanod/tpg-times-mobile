@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { useSettings } from '~/hooks/useSettings';
 import { useResponsiveLayout } from '~/hooks/useResponsiveLayout';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
@@ -16,7 +16,10 @@ export const ResponsiveExample: React.FC = () => {
   const theme = getResponsiveTheme(darkMode);
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      scrollEnabled={typeof Platform === 'undefined' || Platform.OS !== 'web'}
+    >
       {/* Responsive header that scales with device */}
       <View style={[styles.header, { paddingHorizontal: theme.spacing.container }]}>
         <Text style={[styles.title, { color: theme.text }]}>

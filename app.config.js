@@ -70,7 +70,16 @@ export default {
       scope: "/",
       themeColor: "#FF6600",
       backgroundColor: "#ffffff",
-      crossorigin: "use-credentials"
+      crossorigin: "use-credentials",
+      // PWA specific settings to disable zooming and improve behavior
+      meta: {
+        viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
+      },
+      build: {
+        babel: {
+          include: ["@expo/vector-icons"]
+        }
+      }
     },
     plugins: [
       "expo-updates",

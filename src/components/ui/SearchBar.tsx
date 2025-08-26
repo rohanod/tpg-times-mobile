@@ -59,6 +59,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           onFocus={onFocus}
           onBlur={onBlur}
           returnKeyType="done"
+          // Prevent auto-zooming on iOS Safari and mobile browsers
+          fontSize={16}
         />
         {value.length > 0 && !loading && (
           <TouchableOpacity onPress={onClear} style={styles.clearButton}>

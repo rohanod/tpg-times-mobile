@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>%WEB_TITLE%</title>
     <link rel="manifest" href="/manifest.json" />
     <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
@@ -16,12 +16,140 @@
       /* These styles disable body scrolling if you are using <ScrollView> */
       body {
         overflow: hidden;
+        overscroll-behavior: none;
+        touch-action: manipulation;
+        height: 100vh;
+        height: 100dvh; /* Dynamic viewport height for mobile */
       }
-      /* These styles make the root element full-height */
+
+      /* Disable all scrolling on html and body */
+      html, body {
+        overscroll-behavior: none;
+        touch-action: manipulation;
+        position: fixed;
+        width: 100%;
+        height: 100vh;
+        height: 100dvh; /* Dynamic viewport height for mobile */
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Ensure root element takes full space */
       #root {
-        display: flex;
+        width: 100%;
         height: 100%;
+        overflow: hidden;
+        display: flex;
         flex: 1;
+      }
+    </style>
+    <!-- PWA specific styles to improve behavior -->
+    <style id="pwa-styles">
+      /* Disable text selection and highlighting for PWA */
+      * {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        -webkit-user-drag: none;
+      }
+
+      /* Allow text selection in input fields */
+      input, textarea, [contenteditable] {
+        -webkit-user-select: text;
+        -moz-user-select: text;
+        -ms-user-select: text;
+        user-select: text;
+        font-size: 16px !important; /* Prevent zoom on iOS */
+      }
+
+      /* Prevent zoom on input focus for iOS Safari */
+      input[type="text"],
+      input[type="email"],
+      input[type="password"],
+      input[type="search"],
+      input[type="tel"],
+      input[type="url"],
+      input[type="number"],
+      textarea,
+      select {
+        font-size: 16px !important;
+        -webkit-appearance: none;
+        border-radius: 0;
+      }
+
+      /* Disable pull-to-refresh on mobile web */
+      body {
+        overscroll-behavior: none;
+        touch-action: manipulation;
+        /* Prevent zoom on double tap */
+        touch-action: manipulation;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+      }
+
+      /* Improve touch targets */
+      button, [role="button"], .TouchableOpacity {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+      }
+
+      /* Fix for keyboard avoidance - ensure proper spacing */
+      .keyboard-open {
+        padding-bottom: 300px !important;
+      }
+
+      /* Ensure departures container has visible border */
+      [class*="DeparturesList"],
+      [class*="departures"] {
+        border: 1px solid #e0e0e0 !important;
+        border-radius: 8px !important;
+      }
+
+      /* Web-specific overrides for better PWA behavior */
+      html {
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+
+      body {
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+
+      /* Prevent zoom on form elements */
+      form, input, textarea, select, button {
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+
+      /* Enable scrolling ONLY for departures list */
+      [class*="DeparturesList"],
+      [class*="departures"] {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
+        touch-action: pan-y !important;
+      }
+
+      /* Smooth scrolling for departures list */
+      [class*="DeparturesList"] *,
+      [class*="departures"] * {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+      }
+
+      /* Ensure FlatList inside departures list can scroll */
+      [class*="DeparturesList"] [role="list"],
+      [class*="departures"] [role="list"] {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-y !important;
       }
     </style>
   </head>
@@ -33,5 +161,111 @@
     </noscript>
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
+
+    <script>
+      // PWA keyboard handling improvements
+      (function() {
+        let keyboardOpen = false;
+        let originalViewportHeight = window.innerHeight;
+        let resizeTimeout = null;
+        let lastKeyboardCheck = 0;
+
+        function handleKeyboardShow() {
+          if (!keyboardOpen) {
+            keyboardOpen = true;
+            document.body.classList.add('keyboard-open');
+            // Notify React Native Web keyboard handler
+            if (window.webKeyboardHandler) {
+              window.webKeyboardHandler.setKeyboardOpen(true);
+            }
+          }
+        }
+
+        function handleKeyboardHide() {
+          if (keyboardOpen) {
+            keyboardOpen = false;
+            document.body.classList.remove('keyboard-open');
+            // Notify React Native Web keyboard handler
+            if (window.webKeyboardHandler) {
+              window.webKeyboardHandler.setKeyboardOpen(false);
+            }
+          }
+        }
+
+        // Listen for viewport changes (keyboard show/hide) with debouncing
+        function checkViewport() {
+          const now = Date.now();
+          // Throttle checks to avoid excessive calls during typing
+          if (now - lastKeyboardCheck < 500) {
+            return;
+          }
+          lastKeyboardCheck = now;
+
+          const currentHeight = window.innerHeight;
+          const heightDiff = originalViewportHeight - currentHeight;
+
+          // Use larger thresholds to avoid triggering on small changes during typing
+          if (heightDiff > 200 && !keyboardOpen) {
+            handleKeyboardShow();
+          } else if (heightDiff < 50 && keyboardOpen) {
+            handleKeyboardHide();
+          }
+        }
+
+        // Listen for input focus events - only check viewport on initial focus
+        document.addEventListener('focusin', function(event) {
+          if ((event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') && !keyboardOpen) {
+            setTimeout(checkViewport, 500); // Longer delay to allow keyboard to fully show
+          }
+        });
+
+        document.addEventListener('focusout', function(event) {
+          if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+            setTimeout(function() {
+              if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                handleKeyboardHide();
+              }
+            }, 300);
+          }
+        });
+
+        // Listen for viewport resize with debouncing
+        window.addEventListener('resize', function() {
+          if (resizeTimeout) {
+            clearTimeout(resizeTimeout);
+          }
+          resizeTimeout = setTimeout(function() {
+            checkViewport();
+          }, 300); // Increased debounce time
+        });
+
+        // Listen for orientation changes
+        window.addEventListener('orientationchange', function() {
+          setTimeout(function() {
+            originalViewportHeight = window.innerHeight;
+            handleKeyboardHide();
+          }, 200);
+        });
+
+        // Initialize viewport height
+        originalViewportHeight = window.innerHeight;
+
+        // Prevent zoom on double tap
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+          const now = (new Date()).getTime();
+          if (now - lastTouchEnd <= 300) {
+            event.preventDefault();
+          }
+          lastTouchEnd = now;
+        }, false);
+
+        // Ensure viewport meta tag is properly set
+        const viewport = document.querySelector('meta[name=viewport]');
+        if (viewport) {
+          viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+        }
+      })();
+    </script>
   </body>
 </html>

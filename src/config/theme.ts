@@ -93,7 +93,7 @@ export const getThemeColors = (darkMode: boolean) => {
     tabBarInactive: COLORS.TAB_BAR.INACTIVE,
     switchTrackOff: COLORS.SWITCH.TRACK_OFF,
     switchTrackOn: COLORS.SWITCH.TRACK_ON,
-    switchThumb: Platform.OS === 'ios' ? COLORS.SWITCH.THUMB_IOS : COLORS.SWITCH.THUMB_ANDROID,
+    switchThumb: (typeof Platform !== 'undefined' && Platform.OS === 'ios') ? COLORS.SWITCH.THUMB_IOS : COLORS.SWITCH.THUMB_ANDROID,
     loadingIndicator: COLORS.UTILITY.LOADING_INDICATOR
   };
 };

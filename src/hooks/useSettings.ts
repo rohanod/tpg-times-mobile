@@ -7,7 +7,7 @@ let create: any;
 let persist: any;
 let createJSONStorage: any;
 
-if (Platform.OS === 'web') {
+if (typeof Platform !== 'undefined' && Platform.OS === 'web') {
   // Use traditional API for web to avoid import.meta issues
   const zustandTraditional = require('zustand/traditional');
   create = zustandTraditional.createWithEqualityFn;

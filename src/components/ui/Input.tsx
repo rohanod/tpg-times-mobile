@@ -55,6 +55,8 @@ export const Input: React.FC<InputProps> = ({
             style,
           ]}
           placeholderTextColor={theme.textSecondary}
+          // Prevent auto-zooming on iOS Safari and mobile browsers
+          fontSize={16}
           {...props}
         />
         {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}

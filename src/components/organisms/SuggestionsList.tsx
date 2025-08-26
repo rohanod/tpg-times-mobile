@@ -1,11 +1,7 @@
 import React from 'react';
-import { FlatList, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import Animated from 'react-native-reanimated';
-import { useSettings } from '~/hooks/useSettings';
-import { getResponsiveTheme } from '~/utils/responsiveTheme';
+import { FlatList, StyleSheet, StyleProp, ViewStyle, Platform, ScrollView } from 'react-native';
 import { StopSuggestion } from '../molecules/StopSuggestion';
-import { borderRadius, scaleHeight } from '~/utils/responsive';
-import { LAYOUT } from '~/utils/layout';
+import { SuggestionsContainer } from './SuggestionsContainer';
 import type { Stop } from '~/services/DepartureService';
 
 interface SuggestionsListProps {
@@ -15,15 +11,12 @@ interface SuggestionsListProps {
   animatedStyle?: StyleProp<ViewStyle>;
 }
 
-const SuggestionsListComponent: React.FC<SuggestionsListProps> = ({
+const SuggestionsListNative: React.FC<SuggestionsListProps> = ({
   suggestions,
   onStopSelect,
   visible,
   animatedStyle,
 }) => {
-  const { darkMode } = useSettings();
-  const theme = getResponsiveTheme(darkMode);
-
   if (!visible || suggestions.length === 0) {
     return null;
   }
@@ -33,16 +26,7 @@ const SuggestionsListComponent: React.FC<SuggestionsListProps> = ({
   );
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.surface,
-          borderColor: theme.border,
-        },
-        animatedStyle,
-      ]}
-    >
+    <SuggestionsContainer isVisible={visible} animatedStyle={animatedStyle}>
       <FlatList
         data={suggestions}
         renderItem={renderSuggestion}
@@ -52,29 +36,57 @@ const SuggestionsListComponent: React.FC<SuggestionsListProps> = ({
         showsVerticalScrollIndicator={false}
         bounces={false}
       />
-    </Animated.View>
+    </SuggestionsContainer>
   );
 };
 
-export const SuggestionsList = React.memo(SuggestionsListComponent);
+const SuggestionsListWeb: React.FC<SuggestionsListProps> = ({
+  suggestions,
+  onStopSelect,
+  visible,
+}) => {
+  if (!visible || suggestions.length === 0) {
+    return null;
+  }
+
+  console.log('🌐 SuggestionsListWeb rendering with', suggestions.length, 'suggestions');
+  console.log('🌐 onStopSelect function:', typeof onStopSelect);
+
+  return (
+    <SuggestionsContainer isVisible={visible}>
+      <ScrollView
+        style={styles.listWeb}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        // Re-add keyboardShouldPersistTaps to prevent blur from consuming touch events
+        keyboardShouldPersistTaps="handled"
+        scrollEventThrottle={16}
+      >
+        {suggestions.map((stop, index) => (
+          <StopSuggestion
+            key={`${stop.id || stop.rawName}-${index}`}
+            stop={stop}
+            onPress={(selectedStop) => {
+              console.log('🌐 SuggestionsList onPress called with:', selectedStop.rawName);
+              onStopSelect(selectedStop);
+            }}
+          />
+        ))}
+      </ScrollView>
+    </SuggestionsContainer>
+  );
+};
+
+// Platform-specific export
+export const SuggestionsList = Platform.OS === 'web' ? SuggestionsListWeb : SuggestionsListNative;
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: LAYOUT.SUGGESTIONS_TOP,
-    left: LAYOUT.CONTAINER_PADDING,
-    right: LAYOUT.CONTAINER_PADDING,
-    zIndex: 1000,
-    borderRadius: borderRadius.lg,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    borderWidth: 1,
-    maxHeight: scaleHeight(250),
-  },
   list: {
     flexGrow: 0,
+  },
+  listWeb: {
+    maxHeight: 300,
+    // Web-specific scroll optimizations
+    overflow: 'auto' as any,
   },
 });

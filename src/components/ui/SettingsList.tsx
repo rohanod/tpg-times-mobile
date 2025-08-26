@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Switch,
   ViewStyle,
+  Platform,
 } from 'react-native';
 import { getResponsiveTheme } from '~/utils/responsiveTheme';
 import { scaleHeight, scaleWidth, scaleFont } from '~/utils/responsive';
@@ -66,6 +67,7 @@ export const SettingsList: React.FC<SettingsListProps> = ({ sections, style, dar
               }}
               thumbColor={theme.colors.white}
               ios_backgroundColor={theme.colors.systemGray5}
+              style={(typeof Platform !== 'undefined' && Platform.OS === 'web') ? styles.webSwitch : undefined}
             />
           );
         case 'disclosure':
@@ -230,5 +232,9 @@ const styles = StyleSheet.create({
   valueText: {
     fontSize: scaleFont(17),
     fontWeight: '400',
+  },
+  webSwitch: {
+    // Improve Switch appearance on web
+    transform: [{ scale: 0.8 }],
   },
 });

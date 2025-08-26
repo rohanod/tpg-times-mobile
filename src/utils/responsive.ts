@@ -40,7 +40,7 @@ export const scaleFont = (size: number): number => {
   const newSize = size * scale;
   
   // Ensure minimum readable font size
-  if (Platform.OS === 'ios') {
+  if (typeof Platform !== 'undefined' && Platform.OS === 'ios') {
     return Math.max(newSize, 12);
   }
   return Math.max(newSize, 14);

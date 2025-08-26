@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, ScrollView, Alert } from 'react-native';
+import { StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -145,8 +145,8 @@ export default function SettingsScreen() {
         {
           id: 'darkMode',
           title: language === 'en' ? 'Dark Mode' : 'Mode Sombre',
-          subtitle: language === 'en' ? 
-            'Automatically adapts to system settings' : 
+          subtitle: language === 'en' ?
+            'Automatically adapts to system settings' :
             'S\'adapte automatiquement aux paramètres du système',
           type: 'toggle',
           value: darkMode,
@@ -161,8 +161,8 @@ export default function SettingsScreen() {
         {
           id: 'language',
           title: language === 'en' ? 'Language' : 'Langue',
-          subtitle: language === 'en' ? 
-            'App interface language' : 
+          subtitle: language === 'en' ?
+            'App interface language' :
             'Langue de l\'interface de l\'application',
           type: 'toggle',
           value: language === 'fr',
@@ -170,11 +170,11 @@ export default function SettingsScreen() {
         },
         {
           id: 'timeFormat',
-          title: timeFormat === 'minutes' ? 
-            (language === 'en' ? 'Show Minutes' : 'Afficher les Minutes') : 
+          title: timeFormat === 'minutes' ?
+            (language === 'en' ? 'Show Minutes' : 'Afficher les Minutes') :
             (language === 'en' ? 'Show Time' : 'Afficher l\'Heure'),
-          subtitle: language === 'en' ? 
-            'Display departure times in minutes or as clock time' : 
+          subtitle: language === 'en' ?
+            'Display departure times in minutes or as clock time' :
             'Afficher les heures de départ en minutes ou en heure d\'horloge',
           type: 'toggle',
           value: timeFormat === 'minutes',
@@ -182,7 +182,8 @@ export default function SettingsScreen() {
         },
       ],
     },
-    {
+    // Only show app section on non-web platforms
+    ...((typeof Platform !== 'undefined' && Platform.OS !== 'web') ? [{
       id: 'app',
       title: language === 'en' ? 'App' : 'Application',
       items: [
@@ -238,7 +239,7 @@ export default function SettingsScreen() {
           accessibilityLabel: language === 'en' ? 'Reset application' : 'Réinitialiser l\'application',
         },
       ],
-    },
+    }] : []),
   ];
 
   return (
@@ -246,10 +247,11 @@ export default function SettingsScreen() {
       style={[styles.container, { backgroundColor: theme.colors.systemGroupedBackground }]}
       edges={['top']}
     >
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={typeof Platform === 'undefined' || Platform.OS !== 'web'}
       >
         <SectionHeader
           title={language === 'en' ? 'Settings' : 'Paramètres'}

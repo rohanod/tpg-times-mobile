@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { StyleSheet, StyleProp, ViewStyle, Platform } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SearchBar } from '../ui/SearchBar';
 import { LAYOUT } from '~/utils/layout';
@@ -14,6 +14,7 @@ interface SearchSectionProps {
   searchLoading: boolean;
   locationLoading: boolean;
   animatedStyle?: StyleProp<ViewStyle>;
+  suggestionsVisible?: boolean; // Add this prop to control z-index
 }
 
 const SearchSectionComponent: React.FC<SearchSectionProps> = ({
@@ -26,9 +27,17 @@ const SearchSectionComponent: React.FC<SearchSectionProps> = ({
   searchLoading,
   locationLoading,
   animatedStyle,
+  suggestionsVisible = false,
 }) => {
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
+    <Animated.View 
+      style={[
+        styles.container, 
+        // Boost z-index when suggestions are visible on web
+        Platform.OS === 'web' && suggestionsVisible && styles.containerWebElevated,
+        animatedStyle
+      ]}
+    >
       <SearchBar
         value={searchQuery}
         onChangeText={onSearchChange}
@@ -51,5 +60,8 @@ const styles = StyleSheet.create({
     paddingTop: 0, // Remove top padding to maximize space
     paddingBottom: LAYOUT.SECTION_GAP,
     zIndex: 1001,
+  },
+  containerWebElevated: {
+    zIndex: 1001, // Above backdrop when suggestions visible
   },
 });

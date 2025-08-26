@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { Platform } from 'react-native';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../config';
@@ -38,6 +39,47 @@ const CACHE_KEY = 'arrets_csv_cache';
 const CACHE_VERSION = '1.0';
 const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
 
+// Web-specific storage functions
+const webStorage = {
+  async getItem(key: string): Promise<string | null> {
+    if (typeof window === 'undefined') return null;
+    try {
+      const value = window.localStorage.getItem(key);
+      if (__DEV__) {
+        console.log(`WebStorage getItem: ${key} = ${value ? value.substring(0, 100) + '...' : 'null'}`);
+      }
+      return value;
+    } catch (error) {
+      console.error('WebStorage getItem error:', error);
+      return null;
+    }
+  },
+  async setItem(key: string, value: string): Promise<void> {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(key, value);
+      if (__DEV__) {
+        console.log(`WebStorage setItem: ${key} = ${value.substring(0, 100)}...`);
+      }
+    } catch (error) {
+      console.error('WebStorage setItem error:', error);
+      // Silently fail if storage is full or unavailable
+    }
+  },
+  async removeItem(key: string): Promise<void> {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.removeItem(key);
+      if (__DEV__) {
+        console.log(`WebStorage removeItem: ${key}`);
+      }
+    } catch (error) {
+      console.error('WebStorage removeItem error:', error);
+      // Silently fail
+    }
+  }
+};
+
 export const useArretsCsv = () => {
   const [arretsList, setArretsList] = useState<ArretData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,25 +87,28 @@ export const useArretsCsv = () => {
 
   const loadFromCache = useCallback(async (): Promise<ArretData[] | null> => {
     try {
-      const cachedData = await AsyncStorage.getItem(CACHE_KEY);
+      const storage = (typeof Platform !== 'undefined' && Platform.OS === 'web') ? webStorage : AsyncStorage;
+      const cachedData = await storage.getItem(CACHE_KEY);
       if (!cachedData) return null;
 
       const parsed: CachedArretData = JSON.parse(cachedData);
       const now = Date.now();
-      
+
       // Check if cache is expired or version mismatch
       if (now - parsed.timestamp > CACHE_DURATION || parsed.version !== CACHE_VERSION) {
         if (__DEV__) {
           console.log('Arrets cache expired or version mismatch, will fetch fresh data');
         }
-        await AsyncStorage.removeItem(CACHE_KEY);
+        await storage.removeItem(CACHE_KEY);
         return null;
       }
 
       if (__DEV__) {
-        console.log(`Loaded ${parsed.data.length} stops from cache`);
+        const storageType = (typeof Platform !== 'undefined' && Platform.OS === 'web') ? 'localStorage' : 'AsyncStorage';
+        console.log(`Loaded ${parsed.data.length} stops from cache (${storageType})`);
+        console.log('Sample stops:', parsed.data.slice(0, 3));
       }
-      
+
       return parsed.data;
     } catch (error) {
       console.error('Error loading arrets cache:', error);
@@ -73,16 +118,18 @@ export const useArretsCsv = () => {
 
   const saveToCache = useCallback(async (data: ArretData[]): Promise<void> => {
     try {
+      const storage = (typeof Platform !== 'undefined' && Platform.OS === 'web') ? webStorage : AsyncStorage;
       const cacheData: CachedArretData = {
         data,
         timestamp: Date.now(),
         version: CACHE_VERSION
       };
-      
-      await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-      
+
+      await storage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+
       if (__DEV__) {
-        console.log(`Cached ${data.length} stops to AsyncStorage`);
+        const storageType = (typeof Platform !== 'undefined' && Platform.OS === 'web') ? 'localStorage' : 'AsyncStorage';
+        console.log(`Cached ${data.length} stops to ${storageType}`);
       }
     } catch (error) {
       console.error('Error saving arrets cache:', error);
@@ -468,7 +515,8 @@ export const useArretsCsv = () => {
 
   const clearCache = useCallback(async (): Promise<void> => {
     try {
-      await AsyncStorage.removeItem(CACHE_KEY);
+      const storage = (typeof Platform !== 'undefined' && Platform.OS === 'web') ? webStorage : AsyncStorage;
+      await storage.removeItem(CACHE_KEY);
       setArretsList([]);
       if (__DEV__) {
         console.log('Arrets cache cleared');

@@ -8,11 +8,11 @@ import { scaleHeight, scaleWidth, isTablet } from '../../utils/responsive';
 export default function TabLayout() {
   const { language } = useSettings();
   
-  const tabBarHeight = Platform.OS === 'ios' 
+  const tabBarHeight = (typeof Platform !== 'undefined' && Platform.OS === 'ios')
     ? scaleHeight(isTablet() ? 85 : 75)
     : scaleHeight(isTablet() ? 75 : 65);
-    
-  const tabBarPaddingBottom = Platform.OS === 'ios' 
+
+  const tabBarPaddingBottom = (typeof Platform !== 'undefined' && Platform.OS === 'ios') 
     ? scaleHeight(isTablet() ? 25 : 20)
     : scaleHeight(isTablet() ? 15 : 10);
   
