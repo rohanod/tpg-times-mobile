@@ -72,6 +72,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       </View>
 
       <TouchableOpacity
+        testID="location-button"
         style={[styles.locationButton, { backgroundColor: theme.primary }]}
         onPress={onLocationPress}
         disabled={locationLoading}

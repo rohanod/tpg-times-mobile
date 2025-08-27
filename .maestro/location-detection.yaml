@@ -1,0 +1,13 @@
+appId: com.rohanodwyer.tpgtimes
+---
+- launchApp
+# Setup: Navigate to Bouchet stop
+- tapOn:
+    id: "location-button"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    id: "search-input"
+    text: "Genève, Rive"
+- assertVisible:
+    id: 'departure-card-(Tram|Bus)-(2|6|7|8|9|10|12|17)'

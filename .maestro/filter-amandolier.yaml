@@ -4,7 +4,7 @@ appId: com.rohanodwyer.tpgtimes
 # Setup: Navigate to Amandolier stop
 - tapOn:
     id: "search-input"
-- inputText: "GENEVE, Amandolier"
+- inputText: "GENÈVE, Amandolier"
 - tapOn:
     id: "stop-suggestion-8592778"
 - waitForAnimationToEnd:
