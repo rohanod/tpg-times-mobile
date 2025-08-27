@@ -1,8 +1,13 @@
 appId: com.rohanodwyer.tpgtimes
 ---
-- launchApp
-- assertVisible: "TPG Times"
+- launchApp:
+    label: "Launch TPG Times mobile app"
+- assertVisible: 
+    text: "TPG Times"
+    label: "Verify app title is visible"
 - assertVisible:
     id: "search-input"
+    label: "Verify search input field is visible"
 - assertVisible:
     id: "vehicle-filter-input"
+    label: "Verify vehicle filter input field is visible"

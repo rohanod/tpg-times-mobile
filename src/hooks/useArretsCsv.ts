@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../config';
-import { fuzzyMatch, calculateRelevanceScore } from '~/utils/fuzzySearch';
+import { accentInsensitiveMatch, calculateRelevanceScore } from '~/utils/accentSearch';
 
 interface ArretData {
   name: string;
@@ -239,7 +239,7 @@ export const useArretsCsv = () => {
     if (!stopName) return false;
 
     return arretsList.some(arret => {
-      return arret.active && fuzzyMatch(stopName, arret.name);
+      return arret.active && accentInsensitiveMatch(stopName, arret.name);
     });
   };
 
@@ -250,14 +250,14 @@ export const useArretsCsv = () => {
 
     if (!stopName) return '';
 
-    // Find best match using fuzzy search and relevance scoring
+    // Find best match using accent-insensitive search and relevance scoring
     let bestMatch = null;
     let bestScore = -1;
 
     for (const arret of arretsList) {
       if (!arret.active) continue;
 
-      if (fuzzyMatch(stopName, arret.name)) {
+      if (accentInsensitiveMatch(stopName, arret.name)) {
         const score = calculateRelevanceScore(stopName, arret.name, arret.municipality);
         if (score > bestScore) {
           bestScore = score;
@@ -464,15 +464,15 @@ export const useArretsCsv = () => {
 
     const trimmedQuery = query.trim();
 
-    // Filter stops using fuzzy matching that handles accents
+    // Filter stops using accent-insensitive matching
     const matchingStops = arretsList
       .filter(arret => {
         if (!arret.active) return false;
 
-        // Use fuzzy matching for stop name, municipality, and full name
-        return fuzzyMatch(trimmedQuery, arret.name) ||
-               fuzzyMatch(trimmedQuery, arret.municipality) ||
-               fuzzyMatch(trimmedQuery, arret.fullName);
+        // Use accent-insensitive matching for stop name, municipality, and full name
+        return accentInsensitiveMatch(trimmedQuery, arret.name) ||
+               accentInsensitiveMatch(trimmedQuery, arret.municipality) ||
+               accentInsensitiveMatch(trimmedQuery, arret.fullName);
       })
       .map(arret => ({
         id: arret.didocCode,

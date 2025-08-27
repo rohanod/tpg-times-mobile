@@ -1,25 +1,36 @@
 appId: com.rohanodwyer.tpgtimes
 ---
-- launchApp
+- launchApp:
+    label: "Launch TPG Times mobile app"
 # Setup: Navigate to Bouchet stop
 - tapOn:
     id: "search-input"
+    label: "Tap on search input field"
 - inputText: "VERNIER, Bouchet"
+    label: "Type Bouchet stop name"
 - tapOn:
     id: "stop-suggestion-8592791"
+    label: "Select Bouchet stop from suggestions"
 - waitForAnimationToEnd:
     timeout: 2000
+    label: "Wait for navigation to stop page"
 # Apply vehicle filter for Bus 10
 - tapOn:
     id: "vehicle-filter-input"
+    label: "Tap vehicle filter input field"
 - inputText: "10"
+    label: "Type bus line 10 to filter"
 - tapOn:
     id: "add-vehicle-filter-button"
+    label: "Apply vehicle filter"
 - waitForAnimationToEnd:
     timeout: 1000
+    label: "Wait for filter to apply"
 # Verify only Bus 10 departure cards are visible
 - assertVisible:
     id: "departure-card-bus-10"
+    label: "Verify Bus 10 departure card is visible"
 # Verify other departure cards from this stop are not visible (should fail if filter doesn't work)
 - assertNotVisible:
     id: 'departure-card-(Tram|Bus)-(?!10$)\d{1,3}'
+    label: "Verify no other departure cards are visible (filter working)"

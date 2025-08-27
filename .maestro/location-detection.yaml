@@ -1,13 +1,18 @@
 appId: com.rohanodwyer.tpgtimes
 ---
-- launchApp
-# Setup: Navigate to Bouchet stop
+- launchApp:
+    label: "Launch TPG Times mobile app"
+# Setup: Use location detection to find nearby stop
 - tapOn:
     id: "location-button"
+    label: "Tap location detection button"
 - waitForAnimationToEnd:
     timeout: 2000
+    label: "Wait for location detection and stop loading"
 - assertVisible:
     id: "search-input"
     text: "Genève, Rive"
+    label: "Verify location-detected stop name appears in search input"
 - assertVisible:
     id: 'departure-card-(Tram|Bus)-(2|6|7|8|9|10|12|17)'
+    label: "Verify departure cards for nearby transport lines are visible"

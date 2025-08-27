@@ -1,21 +1,30 @@
 appId: com.rohanodwyer.tpgtimes
 ---
-- launchApp
+- launchApp:
+    label: "Launch TPG Times mobile app"
 - tapOn:
     id: "search-input"
+    label: "Tap on search input field"
 - inputText: "amand"
+    label: "Type partial stop name 'amand'"
 # Use regex for fuzzy matching - case insensitive and handles accents
 - assertVisible:
     id: "stop-suggestion-8592778"
     text: "(?i).*gen[eè]ve.*amandolier.*"
+    label: "Verify Amandolier stop suggestion appears with fuzzy matching"
 - tapOn:
     id: "stop-suggestion-8592778"
+    label: "Select Amandolier stop from suggestions"
 - waitForAnimationToEnd:
     timeout: 2000
+    label: "Wait for navigation to stop page"
 - assertVisible:
     id: "search-input"
     text: "(?i).*gen[eè]ve.*amandolier.*"
+    label: "Verify search input shows selected stop name"
 - assertVisible:
     id: "departure-card-bus-11"
+    label: "Verify Bus 11 departure card is visible"
 - assertVisible:
     id: "departure-card-tram-17"
+    label: "Verify Tram 17 departure card is visible"
