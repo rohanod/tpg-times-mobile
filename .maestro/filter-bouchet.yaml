@@ -1,0 +1,25 @@
+appId: com.rohanodwyer.tpgtimes
+---
+- launchApp
+# Setup: Navigate to Bouchet stop
+- tapOn:
+    id: "search-input"
+- inputText: "VERNIER, Bouchet"
+- tapOn:
+    id: "stop-suggestion-8592791"
+- waitForAnimationToEnd:
+    timeout: 2000
+# Apply vehicle filter for Bus 10
+- tapOn:
+    id: "vehicle-filter-input"
+- inputText: "10"
+- tapOn:
+    id: "add-vehicle-filter-button"
+- waitForAnimationToEnd:
+    timeout: 1000
+# Verify only Bus 10 departure cards are visible
+- assertVisible:
+    id: "departure-card-bus-10"
+# Verify other departure cards from this stop are not visible (should fail if filter doesn't work)
+- assertNotVisible:
+    id: 'departure-card-(Tram|Bus)-(?!10$)\d{1,3}'

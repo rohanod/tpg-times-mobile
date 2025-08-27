@@ -69,9 +69,12 @@ const DepartureCardComponent: React.FC<DepartureCardProps> = ({
     },
   ];
 
+  const testID = `departure-card-${departure.vehicleType.toLowerCase()}-${departure.number}`;
+
   return (
     <Animated.View style={[animatedStyle]}>
       <Pressable
+        testID={testID}
         style={pressableStyle}
         onPress={() => onPress?.(departure)}
         android_ripple={{ color: 'rgba(0,0,0,0.06)' }}

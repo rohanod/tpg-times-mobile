@@ -1,0 +1,8 @@
+appId: host.exp.Exponent
+---
+- launchApp
+- assertVisible: "TPG Times"
+- assertVisible:
+    id: "search-input"
+- assertVisible:
+    id: "vehicle-filter-input"

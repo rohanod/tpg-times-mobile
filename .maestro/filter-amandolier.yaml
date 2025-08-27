@@ -1,0 +1,25 @@
+appId: com.rohanodwyer.tpgtimes
+---
+- launchApp
+# Setup: Navigate to Amandolier stop
+- tapOn:
+    id: "search-input"
+- inputText: "GENEVE, Amandolier"
+- tapOn:
+    id: "stop-suggestion-8592778"
+- waitForAnimationToEnd:
+    timeout: 2000
+# Apply vehicle filter for Bus 11
+- tapOn:
+    id: "vehicle-filter-input"
+- inputText: "11"
+- tapOn:
+    id: "add-vehicle-filter-button"
+- waitForAnimationToEnd:
+    timeout: 1000
+# Verify only Bus 11 departure card is visible - all other departure cards should be filtered out
+- assertVisible:
+    id: "departure-card-bus-11"
+# Check that no other departure cards matching pattern departure-card-(Tram|Bus)-{1,3} are visible
+- assertNotVisible:
+    id: 'departure-card-(Tram|Bus)-(?!11$)\d{1,3}'

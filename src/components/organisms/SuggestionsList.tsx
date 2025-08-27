@@ -21,8 +21,12 @@ const SuggestionsListNative: React.FC<SuggestionsListProps> = ({
     return null;
   }
 
-  const renderSuggestion = ({ item }: { item: Stop }) => (
-    <StopSuggestion stop={item} onPress={onStopSelect} />
+  const renderSuggestion = ({ item, index }: { item: Stop; index: number }) => (
+    <StopSuggestion 
+      stop={item} 
+      onPress={onStopSelect} 
+      testID={`stop-suggestion-${item.id}`}
+    />
   );
 
   return (
@@ -70,6 +74,7 @@ const SuggestionsListWeb: React.FC<SuggestionsListProps> = ({
               console.log('🌐 SuggestionsList onPress called with:', selectedStop.rawName);
               onStopSelect(selectedStop);
             }}
+            testID={`stop-suggestion-${stop.id}`}
           />
         ))}
       </ScrollView>

@@ -32,6 +32,7 @@ const VehicleFilterInputComponent: React.FC<VehicleFilterInputProps> = ({
 
   return (
     <Input
+      testID="vehicle-filter-input"
       value={value}
       onChangeText={onChangeText}
       onSubmitEditing={() => onSubmit()}
@@ -47,6 +48,7 @@ const VehicleFilterInputComponent: React.FC<VehicleFilterInputProps> = ({
           onPress={onSubmit}
           accessibilityRole="button"
           accessibilityLabel="Add vehicle filter"
+          testID="add-vehicle-filter-button"
         >
           <MaterialIcons name="add" size={scaleWidth(16)} color="white" />
         </TouchableOpacity>

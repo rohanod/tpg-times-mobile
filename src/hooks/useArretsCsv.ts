@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../config';
+import { fuzzyMatch, calculateRelevanceScore } from '~/utils/fuzzySearch';
 
 interface ArretData {
   name: string;
@@ -234,13 +235,11 @@ export const useArretsCsv = () => {
     if (arretsList.length === 0) {
       await fetchArretsCsv();
     }
-    
+
     if (!stopName) return false;
-    
-    const lowerStopName = stopName.toLowerCase();
+
     return arretsList.some(arret => {
-      const arretName = arret.name.toLowerCase();
-      return arret.active && (lowerStopName.includes(arretName) || arretName.includes(lowerStopName));
+      return arret.active && fuzzyMatch(stopName, arret.name);
     });
   };
 
@@ -248,18 +247,28 @@ export const useArretsCsv = () => {
     if (arretsList.length === 0) {
       await fetchArretsCsv();
     }
-    
+
     if (!stopName) return '';
-    
-    const lowerStopName = stopName.toLowerCase();
-    const match = arretsList.find(arret => {
-      const arretName = arret.name.toLowerCase();
-      return arret.active && (lowerStopName.includes(arretName) || arretName.includes(lowerStopName));
-    });
-    
+
+    // Find best match using fuzzy search and relevance scoring
+    let bestMatch = null;
+    let bestScore = -1;
+
+    for (const arret of arretsList) {
+      if (!arret.active) continue;
+
+      if (fuzzyMatch(stopName, arret.name)) {
+        const score = calculateRelevanceScore(stopName, arret.name, arret.municipality);
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = arret;
+        }
+      }
+    }
+
     // Return the matched stop's raw name - no external API calls
     // Rely on search.ch stationboard response for proper name formatting
-    return match ? match.name : stopName;
+    return bestMatch ? bestMatch.name : stopName;
   };
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -453,49 +462,28 @@ export const useArretsCsv = () => {
       await fetchArretsCsv();
     }
 
-    const normalizedQuery = query.toLowerCase().trim();
-    
-    // Filter stops based on query matching stop name or municipality
+    const trimmedQuery = query.trim();
+
+    // Filter stops using fuzzy matching that handles accents
     const matchingStops = arretsList
       .filter(arret => {
         if (!arret.active) return false;
-        
-        const stopName = arret.name.toLowerCase();
-        const municipality = arret.municipality.toLowerCase();
-        const fullName = arret.fullName.toLowerCase();
-        
-        return stopName.includes(normalizedQuery) || 
-               municipality.includes(normalizedQuery) ||
-               fullName.includes(normalizedQuery);
+
+        // Use fuzzy matching for stop name, municipality, and full name
+        return fuzzyMatch(trimmedQuery, arret.name) ||
+               fuzzyMatch(trimmedQuery, arret.municipality) ||
+               fuzzyMatch(trimmedQuery, arret.fullName);
       })
       .map(arret => ({
         id: arret.didocCode,
         rawName: arret.name,
         municipality: arret.municipality,
-        fullName: `${arret.municipality}, ${arret.name}`
+        fullName: `${arret.municipality}, ${arret.name}`,
+        // Calculate relevance score for sorting
+        relevanceScore: calculateRelevanceScore(trimmedQuery, arret.name, arret.municipality)
       }))
-      // Sort by relevance: exact matches first, then starts with, then contains
-      .sort((a, b) => {
-        const aName = a.rawName.toLowerCase();
-        const bName = b.rawName.toLowerCase();
-        const aMunicipality = a.municipality.toLowerCase();
-        const bMunicipality = b.municipality.toLowerCase();
-        
-        // Exact name match gets highest priority
-        if (aName === normalizedQuery && bName !== normalizedQuery) return -1;
-        if (bName === normalizedQuery && aName !== normalizedQuery) return 1;
-        
-        // Name starts with query gets second priority
-        if (aName.startsWith(normalizedQuery) && !bName.startsWith(normalizedQuery)) return -1;
-        if (bName.startsWith(normalizedQuery) && !aName.startsWith(normalizedQuery)) return 1;
-        
-        // Municipality starts with query gets third priority
-        if (aMunicipality.startsWith(normalizedQuery) && !bMunicipality.startsWith(normalizedQuery)) return -1;
-        if (bMunicipality.startsWith(normalizedQuery) && !aMunicipality.startsWith(normalizedQuery)) return 1;
-        
-        // Alphabetical order for remaining matches
-        return aName.localeCompare(bName);
-      })
+      // Sort by relevance score (higher is better)
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
       // Remove duplicates based on stop name (some stops might have same name in different municipalities)
       .filter((stop, index, array) => {
         return index === array.findIndex(s => s.rawName.toLowerCase() === stop.rawName.toLowerCase());

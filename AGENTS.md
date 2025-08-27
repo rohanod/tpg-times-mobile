@@ -32,6 +32,15 @@
 - Use memo for performance on data-heavy components
 - Always modify the files yourself, don't ask if you are allowed to start working.
 
+## Testing
+- **E2E Testing**: Maestro framework for mobile UI testing
+- **Test Location**: `.maestro/` directory with YAML test files
+- **App ID**: `com.rohanodwyer.tpgtimes` for Expo development builds
+- **Test Commands**: 
+  - Run all tests: `maestro test .maestro/`
+  - Run specific test: `maestro test .maestro/test-name.yaml`
+- **Current Tests**: App launch, stop search functionality with capitalization verification
+
 ## Research & Tooling Workflow
 - DO NOT USE THE FETCH TOOL FOR SEARCH ENGINES EVER.
 - Order of precedence for web research:

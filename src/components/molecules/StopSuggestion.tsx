@@ -9,14 +9,16 @@ import type { Stop } from '~/services/DepartureService';
 interface StopSuggestionProps {
   stop: Stop;
   onPress: (stop: Stop) => void;
+  testID?: string;
 }
 
-const StopSuggestionNative: React.FC<StopSuggestionProps> = ({ stop, onPress }) => {
+const StopSuggestionNative: React.FC<StopSuggestionProps> = ({ stop, onPress, testID }) => {
   const { darkMode } = useSettings();
   const theme = getResponsiveTheme(darkMode);
 
   return (
     <TouchableOpacity
+      testID={testID}
       style={[styles.container, { borderBottomColor: theme.border }]}
       onPress={() => {
         console.log('📱 Native suggestion clicked:', stop.rawName);
@@ -30,7 +32,7 @@ const StopSuggestionNative: React.FC<StopSuggestionProps> = ({ stop, onPress }) 
   );
 };
 
-const StopSuggestionWeb: React.FC<StopSuggestionProps> = ({ stop, onPress }) => {
+const StopSuggestionWeb: React.FC<StopSuggestionProps> = ({ stop, onPress, testID }) => {
   const { darkMode } = useSettings();
   const theme = getResponsiveTheme(darkMode);
   const [isPressed, setIsPressed] = useState(false);
@@ -52,6 +54,7 @@ const StopSuggestionWeb: React.FC<StopSuggestionProps> = ({ stop, onPress }) => 
 
   return (
     <TouchableOpacity
+      testID={testID}
       style={[
         styles.containerWeb,
         { 

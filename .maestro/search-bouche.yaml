@@ -1,0 +1,21 @@
+appId: com.rohanodwyer.tpgtimes
+---
+- launchApp
+- tapOn:
+    id: "search-input"
+- inputText: "bouche"
+# Use regex for fuzzy matching - case insensitive and handles accents
+- assertVisible:
+    id: "stop-suggestion-8592791"
+    text: "(?i).*vernier.*bouche.*"
+- tapOn:
+    id: "stop-suggestion-8592791"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    id: "search-input"
+    text: "(?i).*vernier.*bouche.*"
+- assertVisible:
+    id: "departure-card-bus-10"
+- assertVisible:
+    id: "departure-card-bus-22"

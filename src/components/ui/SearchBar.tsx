@@ -46,6 +46,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       <View style={[styles.searchContainer, { borderColor: theme.border }]}>
         <MaterialIcons name="search" size={componentSizes.searchBar.iconSize} color={theme.textSecondary} />
         <TextInput
+          testID="search-input"
           autoComplete="off"
           autoCorrect={false}
           autoCapitalize="none"
