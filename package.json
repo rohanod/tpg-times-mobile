@@ -4,6 +4,7 @@
   "version": "1.0.1",
   "private": true,
   "scripts": {
+    "tunnel": "EXPO_NO_TELEMETRY=1 expo start --tunnel",
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
     "start": "EXPO_NO_TELEMETRY=1 expo start",
     "deploy:web": "expo export --platform web && eas deploy",
