@@ -9,4 +9,5 @@ export { SearchBar } from './SearchBar';
 export { FilterChip } from './FilterChip';
 export { SectionHeader } from './SectionHeader';
 export { SettingsList } from './SettingsList';
+export { DeviceRestrictionScreen } from './DeviceRestrictionScreen';
 export type { SettingsSection, SettingsItem } from './SettingsList';

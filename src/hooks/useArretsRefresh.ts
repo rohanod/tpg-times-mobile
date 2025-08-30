@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Dimensions } from 'react-native';
 import { useArretsCsv } from './useArretsCsv';
 
 const FIRST_OPEN_KEY = 'first_open_completed';
@@ -8,8 +9,16 @@ export const useArretsRefresh = () => {
   const { refreshCache, loading, error } = useArretsCsv();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Check if this is the first app open and fetch arrets.csv
+  // Check if this is the first app open and fetch arrets.csv (only on phones)
   useEffect(() => {
+    const { width } = Dimensions.get('window');
+    const isPhone = width < 768;
+
+    // Only run first-time setup on phones
+    if (!isPhone) {
+      return;
+    }
+
     const handleFirstOpen = async () => {
       try {
         const firstOpenCompleted = await AsyncStorage.getItem(FIRST_OPEN_KEY);

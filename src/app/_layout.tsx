@@ -7,6 +7,8 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { useFrameworkReady } from '~/hooks/useFrameworkReady';
 import { useSettings } from '~/hooks/useSettings';
 import { useArretsRefresh } from '~/hooks/useArretsRefresh';
+import { getIsPhone } from '~/hooks/useDeviceDetection';
+import { DeviceRestrictionScreen } from '~/components/ui/DeviceRestrictionScreen';
 import { COLORS } from '~/config/theme';
 
 
@@ -14,9 +16,17 @@ import { COLORS } from '~/config/theme';
 export default function RootLayout() {
   useFrameworkReady();
   const { darkMode } = useSettings();
-  // Initialize arrets refresh hook to handle first app open
+
+  // Check device type immediately (synchronous)
+  const isPhone = getIsPhone();
+
+  // Always call the hook (React hooks rule), but it will only run effects for phones
   useArretsRefresh();
 
+  // If not a phone, show device restriction screen immediately
+  if (!isPhone) {
+    return <DeviceRestrictionScreen darkMode={darkMode} />;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
