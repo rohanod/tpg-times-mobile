@@ -84,6 +84,7 @@ export default {
     plugins: [
       "expo-updates",
       "expo-router",
+      "expo-font",
       [
         "expo-location",
         {
